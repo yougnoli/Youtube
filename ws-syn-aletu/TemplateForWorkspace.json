@@ -516,6 +516,52 @@
 			},
 			"dependsOn": [],
 			"location": "westeurope"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/statistics')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/statistics"
+				},
+				"content": {
+					"query": "-- lanciare 3/4 volte\nSELECT\n    subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=03/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY subcategory\nORDER BY num DESC;\n\n--------------------------------------------------------------------\n\nSELECT DISTINCT\n    subcategory\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=03/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/delta-query')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/delta"
+				},
+				"content": {
+					"query": "-- This is auto-generated code\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/delta/',\n        FORMAT = 'DELTA'\n    ) AS [result];\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
 		}
 	]
 }

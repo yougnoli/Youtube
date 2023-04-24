@@ -1,0 +1,20 @@
+{
+	"name": "create-logicaldwh",
+	"properties": {
+		"folder": {
+			"name": "serverless/cetas"
+		},
+		"content": {
+			"query": "CREATE DATABASE LogicalDWH \n                COLLATE Latin1_General_100_BIN2_UTF8;\nGO\n\nCREATE SCHEMA ldw;\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

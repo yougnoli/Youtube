@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "00788e93-278e-4e3b-98b3-d860615f80ad"
+				"spark.autotune.trackingId": "fd5c4073-3e1f-46ba-a399-09475511444e"
 			}
 		},
 		"metadata": {
@@ -163,6 +163,27 @@
 					".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/parquet'))"
 				],
 				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"(df_date.filter((col('year')=='2001') & (col('month')=='01')).write\r\n",
+					".format('parquet')\r\n",
+					".mode('overwrite')\r\n",
+					".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/nonPartitionedParquet'))"
+				],
+				"execution_count": 14
 			},
 			{
 				"cell_type": "code",

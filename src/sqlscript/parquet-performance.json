@@ -1,0 +1,20 @@
+{
+	"name": "parquet-performance",
+	"properties": {
+		"folder": {
+			"name": "csv-vs-parquet"
+		},
+		"content": {
+			"query": "-- This is auto-generated code\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2001/month=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n/*\nStatement ID: {F8BC50F2-8CDD-42E9-BFB6-A068C9271284} | Query hash: 0xF41C5FA9D03F2608 | Distributed request ID: {F2C188D8-D2D1-42A6-AC4C-FE620E552B13}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(1 record affected)\n*/\n\n-----------------------------------------------\n\nSELECT\n    subcategory\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2001/month=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY subcategory\nORDER BY num DESC;\n\n/*\nStatement ID: {5735D31F-971A-4B8A-BDC0-C80AB3558CF6} | Query hash: 0x3D802392914EB552 | Distributed request ID: {F67C32A1-9163-4E70-93CF-067AAFBDA0AC}. Total size of data scanned is 4 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(21 records affected)\n*/",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

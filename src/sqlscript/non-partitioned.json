@@ -1,0 +1,20 @@
+{
+	"name": "non-partitioned",
+	"properties": {
+		"folder": {
+			"name": "partitioning"
+		},
+		"content": {
+			"query": "SELECT TOP 3\n    [year]\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/nonPartitionedParquet/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE [year] = '2001'\nGROUP BY subcategory, [year]\nORDER BY num DESC",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

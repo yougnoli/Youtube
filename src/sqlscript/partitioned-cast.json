@@ -1,8 +1,11 @@
 {
-	"name": "SQL script 1",
+	"name": "partitioned-cast",
 	"properties": {
+		"folder": {
+			"name": "partitioning"
+		},
 		"content": {
-			"query": "-- This is auto-generated code\nSELECT\n    subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/nonPartitionedParquet/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nwhere YEAR(dateTime) = '2001'\nGROUP BY subcategory\n\n--------------------------------------------------------\n\nSELECT TOP 3\n    subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE [result].filepath(1) = '2001'\nGROUP BY subcategory\nORDER BY num DESC",
+			"query": "SELECT TOP 3\n    [result].filepath(1) AS [year]\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE CAST([result].filepath(1) AS SMALLINT) = '2001'\nGROUP BY subcategory, [result].filepath(1)\nORDER BY num DESC",
 			"metadata": {
 				"language": "sql"
 			},

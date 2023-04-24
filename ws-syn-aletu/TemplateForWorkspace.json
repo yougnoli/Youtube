@@ -12,6 +12,10 @@
 			"metadata": "Secure string for 'connectionString' of 'ws-syn-aletu-WorkspaceDefaultSqlServer'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:ws-syn-aletu.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
 		},
+		"nyc_tlc_yellow_sasUri": {
+			"type": "secureString",
+			"metadata": "Secure string for 'sasUri' of 'nyc_tlc_yellow'"
+		},
 		"ws-syn-aletu-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://datalakeytaletu.dfs.core.windows.net"
@@ -21,6 +25,19 @@
 		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/nyc_tlc_yellow')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"sasUri": "[parameters('nyc_tlc_yellow_sasUri')]"
+				}
+			},
+			"dependsOn": []
+		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/ws-syn-aletu-WorkspaceDefaultSqlServer')]",
 			"type": "Microsoft.Synapse/workspaces/linkedServices",
@@ -92,6 +109,413 @@
 				"typeProperties": {}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/csv-parserversion')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/parser-version"
+				},
+				"content": {
+					"query": "SELECT\n    COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) WITH (\n        dataType            VARCHAR(1000)\n        ,dataSubtype        VARCHAR(1000)\n        ,dateTime           DATETIME2\n        ,category           VARCHAR(1000)\n        ,subcategory        VARCHAR(1000)\n        ,status             VARCHAR(1000)\n        ,address            VARCHAR(1000)\n        ,latitude           FLOAT\n        ,longitude          FLOAT\n        ,source             VARCHAR(1000)\n        ,extendedProperties VARCHAR(1000)\n    ) AS [result];\n\nSELECT\n    COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '1.0'\n    ) WITH (\n        dataType            VARCHAR(1000)\n        ,dataSubtype        VARCHAR(1000)\n        ,dateTime           DATETIME2\n        ,category           VARCHAR(1000)\n        ,subcategory        VARCHAR(1000)\n        ,status             VARCHAR(1000)\n        ,address            VARCHAR(1000)\n        ,latitude           FLOAT\n        ,longitude          FLOAT\n        ,source             VARCHAR(1000)\n        ,extendedProperties VARCHAR(1000)\n    ) AS [result];\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/csv-performance')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/csv-vs-parquet"
+				},
+				"content": {
+					"query": "-- This is auto-generated code\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\n\n/*\nStatement ID: {CC3C6A40-54C6-4628-A1D0-84FFDBBFF21E} | Query hash: 0xF41C5FA9D03F2608 | Distributed request ID: {53BB2410-07D5-4AA3-8787-D3E88212F4F1}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(1 record affected)\n*/\n\n-----------------------------------------------------\n\nSELECT\n    subcategory\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    )  \n    -- WITH (\n    --     dataType            VARCHAR(1000)\n    --     ,dataSubtype        VARCHAR(1000)\n    --     ,dateTime           DATETIME2\n    --     ,category           VARCHAR(1000)\n    --     ,subcategory        VARCHAR(1000)\n    --     ,status             VARCHAR(1000)\n    --     ,address            VARCHAR(1000)\n    --     ,latitude           FLOAT\n    --     ,longitude          FLOAT\n    --     ,source             VARCHAR(1000)\n    --     ,extendedProperties VARCHAR(1000)\n    -- ) \n    AS [result]\nGROUP BY subcategory\nORDER BY num DESC;\n\n/*\nStatement ID: {453947E4-6AAD-464B-82EC-514D27A8DF8C} | Query hash: 0x3D802392914EB552 | Distributed request ID: {3086A895-CC5C-49DF-B786-D7E7DD25CEBE}. Total size of data scanned is 5 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(21 records affected)\n*/\n\n-----------------------------------------------------\n\nSELECT\n    subcategory\n    ,dateTime\n    ,address\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\n/*Statement ID: {ED699EC4-6C9F-44EB-A6F2-85D5BD429F51} | Query hash: 0xBDEC233069A302C | Distributed request ID: {AD22B674-DD6A-44A3-A287-EBB8E01068BB}. Total size of data scanned is 3 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(5021 records affected)\n*/\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/non-partitioned')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/partitioning"
+				},
+				"content": {
+					"query": "SELECT TOP 3\n    [year]\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/nonPartitionedParquet/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE [year] = '2001'\nGROUP BY subcategory, [year]\nORDER BY num DESC",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/optimize-listing-files')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/listing-files"
+				},
+				"content": {
+					"query": "-- 1 folder con tutti i file\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/nonPartitionedParquet/*.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n-- Total size of data scanned is 49 megabytes, Total execution time: 00:00:08.246\n\n-- 22 cartelle (years) x 12 mesi (month) x 30/31 giorni (day_month)\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/*/*/*/*.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n-- Total size of data scanned is 1 megabytes, Total execution time: 00:01:12.860",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/parquet-performance')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/csv-vs-parquet"
+				},
+				"content": {
+					"query": "-- This is auto-generated code\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2001/month=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n/*\nStatement ID: {F8BC50F2-8CDD-42E9-BFB6-A068C9271284} | Query hash: 0xF41C5FA9D03F2608 | Distributed request ID: {F2C188D8-D2D1-42A6-AC4C-FE620E552B13}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(1 record affected)\n*/\n\n-----------------------------------------------\n\nSELECT\n    subcategory\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2001/month=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY subcategory\nORDER BY num DESC;\n\n/*\nStatement ID: {5735D31F-971A-4B8A-BDC0-C80AB3558CF6} | Query hash: 0x3D802392914EB552 | Distributed request ID: {F67C32A1-9163-4E70-93CF-067AAFBDA0AC}. Total size of data scanned is 4 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(21 records affected)\n*/\n\n-----------------------------------------------\n\nSELECT\n    subcategory\n    ,dateTime\n    ,address\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2001/month=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\n\n/*\nStatement ID: {EB94DD3F-6C4F-41E0-8E50-1AFB261D6CBC} | Query hash: 0xBDEC233069A302C | Distributed request ID: {CFA5D8C1-3604-487B-B191-A78F8EB979F3}. Total size of data scanned is 2 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(5021 records affected)\n*/",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/partitioned-cast')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/partitioning"
+				},
+				"content": {
+					"query": "SELECT TOP 3\n    CAST([result].filepath(1) AS SMALLINT) AS [year]\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE CAST([result].filepath(1) AS SMALLINT) = '2001'\nGROUP BY subcategory, CAST([result].filepath(1) AS SMALLINT)\nORDER BY num DESC",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/partitioned')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/partitioning"
+				},
+				"content": {
+					"query": "SELECT TOP 3\n    [result].filepath(1) AS [year]\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE [result].filepath(1) = '2001'\nGROUP BY subcategory, [result].filepath(1)\nORDER BY num DESC",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/create-data')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "DevSparkPool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "7c4d55fa-0e8f-4c9f-9ef4-f0500c88b5b9"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/b812f629-6402-4f69-ab6a-880bd6a5c752/resourceGroups/rg-Youtube/providers/Microsoft.Synapse/workspaces/ws-syn-aletu/bigDataPools/DevSparkPool",
+						"name": "DevSparkPool",
+						"type": "Spark",
+						"endpoint": "https://ws-syn-aletu.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/DevSparkPool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"from azureml.opendatasets import SanFranciscoSafety\n",
+							"\n",
+							"data = SanFranciscoSafety()\n",
+							"df = data.to_spark_dataframe()\n",
+							"# Display 10 rows\n",
+							"display(df.limit(10))\n",
+							"df.printSchema()"
+						],
+						"outputs": [],
+						"execution_count": 15
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from pyspark.sql.functions import lpad, col, month, year, dayofmonth\r\n",
+							"from pyspark.sql.types import datetime"
+						],
+						"outputs": [],
+						"execution_count": 16
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"df_date = (df.select('dataType',\r\n",
+							"                    'dataSubtype',\r\n",
+							"                    'dateTime',\r\n",
+							"                    'category',\r\n",
+							"                    'subcategory',\r\n",
+							"                    'status',\r\n",
+							"                    'address',\r\n",
+							"                    'latitude',\r\n",
+							"                    'longitude',\r\n",
+							"                    'source',\r\n",
+							"                    'extendedProperties',\r\n",
+							"                    year('dateTime').alias('year'), \r\n",
+							"                    lpad(month('dateTime'), 2, '0').alias('month'),\r\n",
+							"                    lpad(dayofmonth('dateTime'), 2, '0').alias('day_month')\r\n",
+							"                    )\r\n",
+							"            )\r\n",
+							"\r\n",
+							"df_date.printSchema()"
+						],
+						"outputs": [],
+						"execution_count": 17
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"(df_date.write\r\n",
+							".format('csv')\r\n",
+							".mode('overwrite')\r\n",
+							".partitionBy('year', 'month', 'day_month')\r\n",
+							".option('sep', '|')\r\n",
+							".option('header', True)\r\n",
+							".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/csv'))"
+						],
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"(df_date.write\r\n",
+							".format('parquet')\r\n",
+							".mode('overwrite')\r\n",
+							".partitionBy('year', 'month', 'day_month')\r\n",
+							".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/parquet'))"
+						],
+						"outputs": [],
+						"execution_count": 5
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"(df_date.write\r\n",
+							".format('parquet')\r\n",
+							".mode('overwrite')\r\n",
+							".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/nonPartitionedParquet'))"
+						],
+						"outputs": [],
+						"execution_count": 20
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"(df_date.write\r\n",
+							".format('delta')\r\n",
+							".mode('overwrite')\r\n",
+							".partitionBy('year', 'month', 'day_month')\r\n",
+							".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/delta'))"
+						],
+						"outputs": [],
+						"execution_count": 6
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DevSparkPool')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 15
+				},
+				"autoScale": {
+					"enabled": false,
+					"maxNodeCount": 0,
+					"minNodeCount": 0
+				},
+				"nodeCount": 3,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.3",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": true,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "westeurope"
 		}
 	]
 }

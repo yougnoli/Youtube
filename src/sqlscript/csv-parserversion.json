@@ -1,0 +1,20 @@
+{
+	"name": "csv-parserversion",
+	"properties": {
+		"folder": {
+			"name": "parser-version"
+		},
+		"content": {
+			"query": "SELECT\n    COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) WITH (\n        dataType            VARCHAR(1000)\n        ,dataSubtype        VARCHAR(1000)\n        ,dateTime           DATETIME2\n        ,category           VARCHAR(1000)\n        ,subcategory        VARCHAR(1000)\n        ,status             VARCHAR(1000)\n        ,address            VARCHAR(1000)\n        ,latitude           FLOAT\n        ,longitude          FLOAT\n        ,source             VARCHAR(1000)\n        ,extendedProperties VARCHAR(1000)\n    ) AS [result];\n\nSELECT\n    COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '1.0'\n    ) WITH (\n        dataType            VARCHAR(1000)\n        ,dataSubtype        VARCHAR(1000)\n        ,dateTime           DATETIME2\n        ,category           VARCHAR(1000)\n        ,subcategory        VARCHAR(1000)\n        ,status             VARCHAR(1000)\n        ,address            VARCHAR(1000)\n        ,latitude           FLOAT\n        ,longitude          FLOAT\n        ,source             VARCHAR(1000)\n        ,extendedProperties VARCHAR(1000)\n    ) AS [result];\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

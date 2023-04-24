@@ -1,0 +1,191 @@
+{
+	"name": "create-data",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "DevSparkPool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "00788e93-278e-4e3b-98b3-d860615f80ad"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/b812f629-6402-4f69-ab6a-880bd6a5c752/resourceGroups/rg-Youtube/providers/Microsoft.Synapse/workspaces/ws-syn-aletu/bigDataPools/DevSparkPool",
+				"name": "DevSparkPool",
+				"type": "Spark",
+				"endpoint": "https://ws-syn-aletu.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/DevSparkPool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"from azureml.opendatasets import SanFranciscoSafety\n",
+					"\n",
+					"data = SanFranciscoSafety()\n",
+					"df = data.to_spark_dataframe()\n",
+					"# Display 10 rows\n",
+					"display(df.limit(10))\n",
+					"df.printSchema()"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from pyspark.sql.functions import lpad, col, month, year, dayofmonth\r\n",
+					"from pyspark.sql.types import datetime"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df_date = (df.select('dataType',\r\n",
+					"                    'dataSubtype',\r\n",
+					"                    'dateTime',\r\n",
+					"                    'category',\r\n",
+					"                    'subcategory',\r\n",
+					"                    'status',\r\n",
+					"                    'address',\r\n",
+					"                    'latitude',\r\n",
+					"                    'longitude',\r\n",
+					"                    'source',\r\n",
+					"                    'extendedProperties',\r\n",
+					"                    year('dateTime').alias('year'), \r\n",
+					"                    lpad(month('dateTime'), 2, '0').alias('month'),\r\n",
+					"                    lpad(dayofmonth('dateTime'), 2, '0').alias('day_month')\r\n",
+					"                    )\r\n",
+					"            )\r\n",
+					"\r\n",
+					"df_date.printSchema()"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"(df_date.write\r\n",
+					".format('csv')\r\n",
+					".mode('overwrite')\r\n",
+					".partitionBy('year', 'month', 'day_month')\r\n",
+					".option('sep', '|')\r\n",
+					".option('header', True)\r\n",
+					".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/csv'))"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"(df_date.write\r\n",
+					".format('parquet')\r\n",
+					".mode('overwrite')\r\n",
+					".partitionBy('year', 'month', 'day_month')\r\n",
+					".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/parquet'))"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"(df_date.write\r\n",
+					".format('delta')\r\n",
+					".mode('overwrite')\r\n",
+					".partitionBy('year', 'month', 'day_month')\r\n",
+					".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/delta'))"
+				],
+				"execution_count": 6
+			}
+		]
+	}
+}

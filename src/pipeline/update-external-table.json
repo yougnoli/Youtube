@@ -7,7 +7,7 @@
 				"type": "SqlServerStoredProcedure",
 				"dependsOn": [
 					{
-						"activity": "Delete1",
+						"activity": "delete-extTable-location",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -30,7 +30,7 @@
 				}
 			},
 			{
-				"name": "Delete1",
+				"name": "delete-extTable-location",
 				"type": "Delete",
 				"dependsOn": [],
 				"policy": {

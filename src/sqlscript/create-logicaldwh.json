@@ -5,12 +5,12 @@
 			"name": "serverless/cetas"
 		},
 		"content": {
-			"query": "CREATE DATABASE LogicalDWH \n                COLLATE Latin1_General_100_BIN2_UTF8;\nGO\n\nUSE LogicalDWH;\nGO\n\nCREATE SCHEMA ldw;\nGO\n\nCREATE LOGIN [ale]\nWITH PASSWORD = 'password.1!!'\n\nCREATE USER [ale]\n    FOR LOGIN [ale]\n    WITH DEFAULT_SCHEMA = dbo;\nGO\n",
+			"query": "CREATE DATABASE LogicalDWH \n                COLLATE Latin1_General_100_BIN2_UTF8;\nGO\n\nUSE LogicalDWH;\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'password.1!!';\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL MSI_Conn WITH IDENTITY = 'Managed Identity';\nGO\n\nCREATE SCHEMA ldw;\nGO\n\nCREATE LOGIN [ale]\nWITH PASSWORD = 'password.1!!'\n\nCREATE USER [ale]\n    FOR LOGIN [ale]\n    WITH DEFAULT_SCHEMA = dbo;\nGO\n\nGRANT EXECUTE ON SCHEMA:: ldw TO ale ",
 			"metadata": {
 				"language": "sql"
 			},
 			"currentConnection": {
-				"databaseName": "master",
+				"databaseName": "LogicalDWH",
 				"poolName": "Built-in"
 			},
 			"resultLimit": 5000

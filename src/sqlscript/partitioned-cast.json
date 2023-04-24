@@ -5,7 +5,7 @@
 			"name": "partitioning"
 		},
 		"content": {
-			"query": "SELECT TOP 3\n    [result].filepath(1) AS [year]\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE CAST([result].filepath(1) AS SMALLINT) = '2001'\nGROUP BY subcategory, [result].filepath(1)\nORDER BY num DESC",
+			"query": "SELECT TOP 3\n    CAST([result].filepath(1) AS SMALLINT) AS [year]\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE CAST([result].filepath(1) AS SMALLINT) = '2001'\nGROUP BY subcategory, CAST([result].filepath(1) AS SMALLINT)\nORDER BY num DESC",
 			"metadata": {
 				"language": "sql"
 			},

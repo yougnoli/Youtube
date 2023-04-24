@@ -5,7 +5,7 @@
 			"name": "serverless/cetas"
 		},
 		"content": {
-			"query": "-- query da riutilizzare\nSELECT\n    DATENAME(MONTH, dateTime) AS monthname\n    ,dataType\n    ,dataSubtype\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;\n--  Total size of data scanned is 54 megabytes, Total execution time: 00:00:43.610\n\n",
+			"query": "-- query da riutilizzare\nSELECT\n    DATENAME(MONTH, dateTime) AS monthname\n    ,dataType\n    ,dataSubtype\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;\n--  Total size of data scanned is 54 megabytes, Total execution time: 00:00:43.610",
 			"metadata": {
 				"language": "sql"
 			},

@@ -1,0 +1,20 @@
+{
+	"name": "cetas",
+	"properties": {
+		"folder": {
+			"name": "serverless/cetas"
+		},
+		"content": {
+			"query": "USE LogicalDWH;\nGO\n\nCREATE EXTERNAL FILE FORMAT [parquet] WITH ( FORMAT_TYPE = PARQUET);\nGO\n\nCREATE EXTERNAL DATA SOURCE [sanfranciscofireworkers] WITH (LOCATION = 'abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net');\nGO\n\nCREATE EXTERNAL TABLE ldw.call_2020_agg\n\tWITH (\n\tLOCATION = 'sanfrancisco/raw/2020/',\n\tDATA_SOURCE = [sanfranciscofireworkers],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    DATENAME(MONTH, dateTime) AS monthname\n    ,dataType\n    ,dataSubtype\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LogicalDWH",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "fd5c4073-3e1f-46ba-a399-09475511444e"
+				"spark.autotune.trackingId": "7c4d55fa-0e8f-4c9f-9ef4-f0500c88b5b9"
 			}
 		},
 		"metadata": {
@@ -62,7 +62,7 @@
 					"display(df.limit(10))\n",
 					"df.printSchema()"
 				],
-				"execution_count": 1
+				"execution_count": 15
 			},
 			{
 				"cell_type": "code",
@@ -81,7 +81,7 @@
 					"from pyspark.sql.functions import lpad, col, month, year, dayofmonth\r\n",
 					"from pyspark.sql.types import datetime"
 				],
-				"execution_count": 2
+				"execution_count": 16
 			},
 			{
 				"cell_type": "code",
@@ -116,7 +116,7 @@
 					"\r\n",
 					"df_date.printSchema()"
 				],
-				"execution_count": 3
+				"execution_count": 17
 			},
 			{
 				"cell_type": "code",
@@ -178,12 +178,12 @@
 					}
 				},
 				"source": [
-					"(df_date.filter((col('year')=='2001') & (col('month')=='01')).write\r\n",
+					"(df_date.write\r\n",
 					".format('parquet')\r\n",
 					".mode('overwrite')\r\n",
 					".save('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/nonPartitionedParquet'))"
 				],
-				"execution_count": 14
+				"execution_count": 20
 			},
 			{
 				"cell_type": "code",

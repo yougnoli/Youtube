@@ -1,0 +1,17 @@
+{
+	"name": "SQL script 1",
+	"properties": {
+		"content": {
+			"query": "-- This is auto-generated code\nSELECT\n    subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/nonPartitionedParquet/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nwhere YEAR(dateTime) = '2001'\nGROUP BY subcategory\n\n--------------------------------------------------------\n\nSELECT TOP 3\n    subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE [result].filepath(1) = '2001'\nGROUP BY subcategory\nORDER BY num DESC",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

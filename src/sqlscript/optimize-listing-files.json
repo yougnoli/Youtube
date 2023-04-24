@@ -1,6 +1,9 @@
 {
 	"name": "optimize-listing-files",
 	"properties": {
+		"folder": {
+			"name": "serverless/listing-files"
+		},
 		"content": {
 			"query": "-- 1 folder con tutti i file\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/nonPartitionedParquet/*.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n-- Total size of data scanned is 49 megabytes, Total execution time: 00:00:08.246\n\n-- 22 cartelle (years) x 12 mesi (month) x 30/31 giorni (day_month)\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/*/*/*/*.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n-- Total size of data scanned is 1 megabytes, Total execution time: 00:01:12.860",
 			"metadata": {

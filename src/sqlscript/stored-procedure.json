@@ -1,11 +1,11 @@
 {
-	"name": "SQL script 1",
+	"name": "stored-procedure",
 	"properties": {
 		"folder": {
 			"name": "serverless/cetas"
 		},
 		"content": {
-			"query": "-- CREATE PROCEDURE ldw.ctas_renew\n-- AS\n    BEGIN\n        IF NOT EXISTS (SELECT [name] FROM [sys].[external_tables] WHERE [name] = 'call_2020_agg')\n        BEGIN\n            DROP EXTERNAL TABLE ldw.call_2020_agg;\n\n            CREATE EXTERNAL TABLE ldw.call_2020_agg\n                WITH (\n                LOCATION = 'sanfrancisco/raw/2020/',\n                DATA_SOURCE = [sanfranciscofireworkers],\n                FILE_FORMAT = [parquet]\n                ) AS\n            SELECT\n                DATENAME(MONTH, dateTime) AS monthname\n                ,dataType\n                ,dataSubtype\n                ,subcategory\n                ,COUNT(*) AS num\n            FROM\n                OPENROWSET(\n                    BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n                    FORMAT = 'PARQUET'\n                ) AS [result]\n            GROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;            \n        END\n    END;",
+			"query": "CREATE PROCEDURE ldw.ctas_renew\nAS\n    BEGIN\n        IF EXISTS (SELECT [name] FROM [sys].[external_tables] WHERE [name] = 'call_2020_agg')\n        BEGIN\n            DROP EXTERNAL TABLE ldw.call_2020_agg;\n        END\n        CREATE EXTERNAL TABLE ldw.call_2020_agg\n            WITH (\n            LOCATION = '2020/',\n            DATA_SOURCE = [sanfranciscofireworkers],\n            FILE_FORMAT = [parquet]\n            ) AS\n        SELECT\n            DATENAME(MONTH, dateTime) AS monthname\n            ,dataType\n            ,dataSubtype\n            ,subcategory\n            ,COUNT(*) AS num\n        FROM\n            OPENROWSET(\n                BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n                FORMAT = 'PARQUET'\n            ) AS [result]\n        GROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;            \n    END;",
 			"metadata": {
 				"language": "sql"
 			},

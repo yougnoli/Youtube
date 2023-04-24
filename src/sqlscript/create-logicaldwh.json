@@ -5,7 +5,7 @@
 			"name": "serverless/cetas"
 		},
 		"content": {
-			"query": "CREATE DATABASE LogicalDWH \n                COLLATE Latin1_General_100_BIN2_UTF8;\nGO\n\nUSE LogicalDWH;\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'password.1!!';\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL MSI_Conn WITH IDENTITY = 'Managed Identity';\nGO\n\nCREATE SCHEMA ldw;\nGO\n\nCREATE LOGIN [ale]\nWITH PASSWORD = 'password.1!!'\n\nCREATE USER [ale]\n    FOR LOGIN [ale]\n    WITH DEFAULT_SCHEMA = dbo;\nGO\n\nGRANT EXECUTE ON SCHEMA:: ldw TO ale ",
+			"query": "CREATE DATABASE LogicalDWH \n                COLLATE Latin1_General_100_BIN2_UTF8;\nGO\n\nUSE LogicalDWH;\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'password.1!!';\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL datalake_credentials\n    WITH IDENTITY = 'SHARED ACCESS SIGNATURE',\n    SECRET = 'sp=racwdlmeop&st=2023-04-24T23:20:03Z&se=2023-11-28T08:20:03Z&spr=https&sv=2021-12-02&sr=c&sig=%2BJ%2BuolpjojQJHLZu9Sp8ElkfVOpL1hMl%2B%2F5lDdNL2YM%3D';\nGO\n\nCREATE SCHEMA ldw;\nGO\n\nCREATE LOGIN [ale]\nWITH PASSWORD = 'password.1!!'\n\nCREATE USER [ale]\n    FOR LOGIN [ale]\n    WITH DEFAULT_SCHEMA = dbo;\nGO\n\nGRANT ADMINISTER DATABASE BULK OPERATIONS TO ale\nGRANT REFERENCES ON DATABASE SCOPED CREDENTIAL::[datalake_credentials] TO [ale];\nGRANT EXECUTE ON SCHEMA:: ldw TO ale",
 			"metadata": {
 				"language": "sql"
 			},

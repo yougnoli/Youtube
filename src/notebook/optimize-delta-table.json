@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "9d8ce4d9-552e-4cb4-8703-19452883f3f8"
+				"spark.autotune.trackingId": "76bcc04b-af49-4ee0-a12e-24b3bbf023b6"
 			}
 		},
 		"metadata": {
@@ -97,11 +97,11 @@
 					"collapsed": false
 				},
 				"source": [
-					"Fire = spark.read.load('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/delta/year=2001/', format='parquet')\r\n",
+					"Fire = spark.read.load('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/delta/', format='parquet')\r\n",
 					"\r\n",
 					"display(Fire.limit(5))"
 				],
-				"execution_count": 15
+				"execution_count": 17
 			},
 			{
 				"cell_type": "code",
@@ -119,7 +119,7 @@
 				"source": [
 					"Fire.createOrReplaceTempView('Fire')"
 				],
-				"execution_count": 6
+				"execution_count": 18
 			},
 			{
 				"cell_type": "code",
@@ -147,7 +147,7 @@
 					"    AS\r\n",
 					"    SELECT * FROM Fire"
 				],
-				"execution_count": 13
+				"execution_count": 22
 			},
 			{
 				"cell_type": "code",
@@ -171,7 +171,7 @@
 					"\r\n",
 					"OPTIMIZE optimize.spark_fire"
 				],
-				"execution_count": 14
+				"execution_count": 23
 			},
 			{
 				"cell_type": "code",
@@ -195,7 +195,7 @@
 					"\r\n",
 					"OPTIMIZE optimize.spark_fire ZORDER BY(dateTime)"
 				],
-				"execution_count": 16
+				"execution_count": 24
 			}
 		]
 	}

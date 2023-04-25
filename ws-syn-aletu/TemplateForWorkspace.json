@@ -12,6 +12,11 @@
 			"metadata": "Secure string for 'connectionString' of 'ws-syn-aletu-WorkspaceDefaultSqlServer'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:ws-syn-aletu.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
 		},
+		"Serverless_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Serverless'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=ws-syn-aletu-ondemand.sql.azuresynapse.net;Initial Catalog=LogicalDWH"
+		},
 		"nyc_tlc_yellow_sasUri": {
 			"type": "secureString",
 			"metadata": "Secure string for 'sasUri' of 'nyc_tlc_yellow'"
@@ -25,6 +30,111 @@
 		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/update-external-table')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "renew_cetas",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "delete-extTable-location",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "ldw.ctas_renew"
+						},
+						"linkedServiceName": {
+							"referenceName": "Serverless",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "delete-extTable-location",
+						"type": "Delete",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "BinaryCetas",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"logStorageSettings": {
+								"linkedServiceName": {
+									"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
+									"type": "LinkedServiceReference"
+								},
+								"path": "sanfranciscofireworkersdata/sanfrancisco/raw/log_delete"
+							},
+							"enableLogging": true,
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "serverless"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/Serverless')]",
+				"[concat(variables('workspaceId'), '/datasets/BinaryCetas')]",
+				"[concat(variables('workspaceId'), '/linkedServices/ws-syn-aletu-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/BinaryCetas')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "sanfrancisco/raw",
+						"fileSystem": "sanfranciscofireworkersdata"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/ws-syn-aletu-WorkspaceDefaultStorage')]"
+			]
+		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/nyc_tlc_yellow')]",
 			"type": "Microsoft.Synapse/workspaces/linkedServices",
@@ -111,6 +221,52 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/cetas')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/cetas"
+				},
+				"content": {
+					"query": "USE LogicalDWH;\nGO\n\nCREATE EXTERNAL FILE FORMAT [parquet] WITH (FORMAT_TYPE = PARQUET);\nGO\n\nCREATE EXTERNAL DATA SOURCE [sanfranciscofireworkers] WITH (LOCATION = 'abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/raw/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE ldw.call_2020_agg\n\tWITH (\n\tLOCATION = '2020/',\n\tDATA_SOURCE = [sanfranciscofireworkers],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    DATENAME(MONTH, dateTime) AS monthname\n    ,dataType\n    ,dataSubtype\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/create-logicaldwh')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/cetas"
+				},
+				"content": {
+					"query": "CREATE DATABASE LogicalDWH \n                COLLATE Latin1_General_100_BIN2_UTF8;\nGO\n\nUSE LogicalDWH;\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'password.1!!';\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL SynapseIdentity\nWITH IDENTITY = 'Managed Identity';\nGO\n\nCREATE SCHEMA ldw;\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/csv-parserversion')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -143,6 +299,29 @@
 				},
 				"content": {
 					"query": "-- This is auto-generated code\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\n\n/*\nStatement ID: {CC3C6A40-54C6-4628-A1D0-84FFDBBFF21E} | Query hash: 0xF41C5FA9D03F2608 | Distributed request ID: {53BB2410-07D5-4AA3-8787-D3E88212F4F1}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(1 record affected)\n*/\n\n-----------------------------------------------------\n\nSELECT\n    subcategory\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    )  \n    -- WITH (\n    --     dataType            VARCHAR(1000)\n    --     ,dataSubtype        VARCHAR(1000)\n    --     ,dateTime           DATETIME2\n    --     ,category           VARCHAR(1000)\n    --     ,subcategory        VARCHAR(1000)\n    --     ,status             VARCHAR(1000)\n    --     ,address            VARCHAR(1000)\n    --     ,latitude           FLOAT\n    --     ,longitude          FLOAT\n    --     ,source             VARCHAR(1000)\n    --     ,extendedProperties VARCHAR(1000)\n    -- ) \n    AS [result]\nGROUP BY subcategory\nORDER BY num DESC;\n\n/*\nStatement ID: {453947E4-6AAD-464B-82EC-514D27A8DF8C} | Query hash: 0x3D802392914EB552 | Distributed request ID: {3086A895-CC5C-49DF-B786-D7E7DD25CEBE}. Total size of data scanned is 5 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(21 records affected)\n*/\n\n-----------------------------------------------------\n\nSELECT\n    subcategory\n    ,dateTime\n    ,address\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/csv/year=2001/month=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\n/*Statement ID: {ED699EC4-6C9F-44EB-A6F2-85D5BD429F51} | Query hash: 0xBDEC233069A302C | Distributed request ID: {AD22B674-DD6A-44A3-A287-EBB8E01068BB}. Total size of data scanned is 3 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(5021 records affected)\n*/\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/delta-query')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/delta"
+				},
+				"content": {
+					"query": "-- This is auto-generated code\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/delta/',\n        FORMAT = 'DELTA'\n    ) AS [result];\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -263,6 +442,98 @@
 					},
 					"currentConnection": {
 						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/query-extTable')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/cetas"
+				},
+				"content": {
+					"query": "-- external table\nSELECT * FROM ldw.call_2020_agg\n-- Total size of data scanned is 1 megabytes, Total execution time: 00:00:05.418",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/query')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/cetas"
+				},
+				"content": {
+					"query": "-- query da riutilizzare\nSELECT\n    DATENAME(MONTH, dateTime) AS monthname\n    ,dataType\n    ,dataSubtype\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;\n--  Total size of data scanned is 54 megabytes, Total execution time: 00:00:43.610",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/statistics')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/statistics"
+				},
+				"content": {
+					"query": "-- lanciare 3/4 volte\nSELECT\n    subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=03/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY subcategory\nORDER BY num DESC;\n\n--------------------------------------------------------------------\n\nSELECT DISTINCT\n    subcategory\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=03/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/stored-procedure')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "serverless/cetas"
+				},
+				"content": {
+					"query": "CREATE PROCEDURE ldw.ctas_renew\nAS\n    BEGIN\n        IF EXISTS (SELECT [name] FROM [sys].[external_tables] WHERE [name] = 'call_2020_agg')\n        BEGIN\n            DROP EXTERNAL TABLE ldw.call_2020_agg;\n        END\n        CREATE EXTERNAL TABLE ldw.call_2020_agg\n            WITH (\n            LOCATION = '2020/',\n            DATA_SOURCE = [sanfranciscofireworkers],\n            FILE_FORMAT = [parquet]\n            ) AS\n        SELECT\n            DATENAME(MONTH, dateTime) AS monthname\n            ,dataType\n            ,dataSubtype\n            ,subcategory\n            ,COUNT(*) AS num\n        FROM\n            OPENROWSET(\n                BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n                FORMAT = 'PARQUET'\n            ) AS [result]\n        GROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;            \n    END;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
@@ -518,50 +789,23 @@
 			"location": "westeurope"
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/statistics')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"name": "[concat(parameters('workspaceName'), '/Serverless')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"folder": {
-					"name": "serverless/statistics"
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('Serverless_connectionString')]"
 				},
-				"content": {
-					"query": "-- lanciare 3/4 volte\nSELECT\n    subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=03/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY subcategory\nORDER BY num DESC;\n\n--------------------------------------------------------------------\n\nSELECT DISTINCT\n    subcategory\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=03/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
 			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/delta-query')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "serverless/delta"
-				},
-				"content": {
-					"query": "-- This is auto-generated code\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/delta/',\n        FORMAT = 'DELTA'\n    ) AS [result];\n",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
 		}
 	]
 }

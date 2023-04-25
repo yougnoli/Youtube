@@ -5,11 +5,11 @@
 		"workspaceName": {
 			"value": "ws-syn-aletu"
 		},
-		"ws-syn-aletu-WorkspaceDefaultSqlServer_connectionString": {
-			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:ws-syn-aletu.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
-		},
 		"Serverless_connectionString": {
 			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=ws-syn-aletu-ondemand.sql.azuresynapse.net;Initial Catalog=LogicalDWH"
+		},
+		"ws-syn-aletu-WorkspaceDefaultSqlServer_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:ws-syn-aletu.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
 		},
 		"nyc_tlc_yellow_sasUri": {
 			"value": ""

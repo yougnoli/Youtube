@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "b2ccda62-2b41-42c1-86c1-4d7c9e6e6b65"
+				"spark.autotune.trackingId": "6372a39d-7372-4c11-beaf-57f690b7f950"
 			}
 		},
 		"metadata": {
@@ -264,10 +264,10 @@
 					"(df_date.write\r\n",
 					".format('delta')\r\n",
 					".mode('overwrite')\r\n",
-					".partitionBy('puYear', 'puMonth', 'puDay')\r\n",
+					".partitionBy('puYear', 'puMonth')\r\n",
 					".save('abfss://yellowtaxi@datalakeytaletu.dfs.core.windows.net/nyc/delta'))"
 				],
-				"execution_count": null
+				"execution_count": 32
 			},
 			{
 				"cell_type": "code",
@@ -288,7 +288,7 @@
 					".mode('overwrite')\r\n",
 					".save('abfss://yellowtaxi@datalakeytaletu.dfs.core.windows.net/nyc/nonPartitionedParquet'))"
 				],
-				"execution_count": null
+				"execution_count": 31
 			}
 		]
 	}

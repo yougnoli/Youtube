@@ -1,0 +1,20 @@
+{
+	"name": "parquet-partition-types-performance",
+	"properties": {
+		"folder": {
+			"name": "taxi/serverless/parquet-performance"
+		},
+		"content": {
+			"query": "-- no partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/nonPartitionedParquet/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE CONVERT(DATE, tpepPickupDateTime) = '20100101' \nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {8D11681C-846B-4AC3-B11E-22D756CAAD56} | Query hash: 0x65FDC93AAB0473B9 | Distributed request ID: {64AE41C8-0B4B-474D-8FB9-A33386C38AFB}. Total size of data scanned is 19625 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:01:03.846\n*/\n\n-- year month partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE puDay = '01'\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {96827B68-F4E9-4D1D-AD36-EFD294A4B1EF} | Query hash: 0x39A2453CDE02D22F | Distributed request ID: {35025942-1EFD-40EA-BF99-218F138ED0A6}. Total size of data scanned is 32 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:00:09.404\n*/\n\n-- year month day partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/puDay=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {FF406F92-0562-493F-8384-D3073C94D84F} | Query hash: 0x9F2693848479C4DF | Distributed request ID: {B2E77C73-DF38-4DA0-85ED-F5AD058650B1}. Total size of data scanned is 2 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:00:09.611\n*/\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

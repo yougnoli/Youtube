@@ -2,7 +2,7 @@
 	"name": "statistics",
 	"properties": {
 		"folder": {
-			"name": "serverless/statistics"
+			"name": "sanfrancisco/serverless/statistics"
 		},
 		"content": {
 			"query": "-- lanciare 3/4 volte\nSELECT\n    subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=03/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY subcategory\nORDER BY num DESC;\n\n--------------------------------------------------------------------\n\nSELECT DISTINCT\n    subcategory\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=03/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];",

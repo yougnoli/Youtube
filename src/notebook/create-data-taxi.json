@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "1ef083e6-6e1e-401c-88f5-b4c43d7ba21a"
+				"spark.autotune.trackingId": "b2ccda62-2b41-42c1-86c1-4d7c9e6e6b65"
 			}
 		},
 		"metadata": {
@@ -114,7 +114,7 @@
 				"source": [
 					"df.count()"
 				],
-				"execution_count": null
+				"execution_count": 25
 			},
 			{
 				"cell_type": "code",
@@ -133,7 +133,7 @@
 					"from pyspark.sql.functions import lpad, col, month, year, dayofmonth\r\n",
 					"from pyspark.sql.types import datetime, StringType"
 				],
-				"execution_count": null
+				"execution_count": 26
 			},
 			{
 				"cell_type": "code",
@@ -151,7 +151,7 @@
 				"source": [
 					"df.columns"
 				],
-				"execution_count": null
+				"execution_count": 27
 			},
 			{
 				"cell_type": "code",
@@ -199,7 +199,7 @@
 					"display(df_date.limit(5))\r\n",
 					"df_date.printSchema()"
 				],
-				"execution_count": null
+				"execution_count": 28
 			},
 			{
 				"cell_type": "code",
@@ -221,7 +221,7 @@
 					".partitionBy('puYear', 'puMonth', 'puDay')\r\n",
 					".save('abfss://yellowtaxi@datalakeytaletu.dfs.core.windows.net/nyc/parquet'))"
 				],
-				"execution_count": null
+				"execution_count": 29
 			},
 			{
 				"cell_type": "code",
@@ -245,7 +245,7 @@
 					".option('header', True)\r\n",
 					".save('abfss://yellowtaxi@datalakeytaletu.dfs.core.windows.net/nyc/csv'))"
 				],
-				"execution_count": null
+				"execution_count": 30
 			},
 			{
 				"cell_type": "code",

@@ -2,7 +2,7 @@
 	"name": "create-logicaldwh",
 	"properties": {
 		"folder": {
-			"name": "serverless/cetas"
+			"name": "sanfrancisco/serverless/cetas"
 		},
 		"content": {
 			"query": "CREATE DATABASE LogicalDWH \n                COLLATE Latin1_General_100_BIN2_UTF8;\nGO\n\nUSE LogicalDWH;\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'password.1!!';\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL SynapseIdentity\nWITH IDENTITY = 'Managed Identity';\nGO\n\nCREATE SCHEMA ldw;\nGO",

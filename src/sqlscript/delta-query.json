@@ -2,7 +2,7 @@
 	"name": "delta-query",
 	"properties": {
 		"folder": {
-			"name": "serverless/delta"
+			"name": "sanfrancisco/serverless/delta"
 		},
 		"content": {
 			"query": "-- This is auto-generated code\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/delta/',\n        FORMAT = 'DELTA'\n    ) AS [result];\n",

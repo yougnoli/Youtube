@@ -2,7 +2,7 @@
 	"name": "optimized-query",
 	"properties": {
 		"folder": {
-			"name": "serverless/optimize-delta"
+			"name": "sanfrancisco/serverless/optimize-delta"
 		},
 		"content": {
 			"query": "SELECT\n    subcategory\n    ,COUNT(*) AS num\n    ,CAST(dateTime AS DATE) as [date]\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/deltaoptimize/',\n        FORMAT = 'DELTA'\n    ) AS [result]\nWHERE CAST(dateTime AS DATE) = '20010101'\nGROUP BY subcategory, CAST(dateTime AS DATE);\n-- Total size of data scanned is 148 megabytes, Total execution time: 00:00:17.255",

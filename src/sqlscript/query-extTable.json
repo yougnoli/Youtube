@@ -2,7 +2,7 @@
 	"name": "query-extTable",
 	"properties": {
 		"folder": {
-			"name": "serverless/cetas"
+			"name": "sanfrancisco/serverless/cetas"
 		},
 		"content": {
 			"query": "-- external table\nSELECT * FROM ldw.call_2020_agg\n-- Total size of data scanned is 1 megabytes, Total execution time: 00:00:05.418",

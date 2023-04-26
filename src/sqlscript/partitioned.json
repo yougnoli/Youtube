@@ -2,7 +2,7 @@
 	"name": "partitioned",
 	"properties": {
 		"folder": {
-			"name": "serverless/partitioning"
+			"name": "sanfrancisco/serverless/partitioning"
 		},
 		"content": {
 			"query": "SELECT TOP 3\n    [result].filepath(1) AS [year]\n    ,subcategory\n    ,COUNT(*) AS num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE [result].filepath(1) = '2001'\nGROUP BY subcategory, [result].filepath(1)\nORDER BY num DESC",

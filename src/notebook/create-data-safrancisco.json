@@ -1,5 +1,5 @@
 {
-	"name": "create-data",
+	"name": "create-data-safrancisco",
 	"properties": {
 		"folder": {
 			"name": "adls"
@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "7c4d55fa-0e8f-4c9f-9ef4-f0500c88b5b9"
+				"spark.autotune.trackingId": "84dc63fa-cb4d-4273-8615-45a6360e6814"
 			}
 		},
 		"metadata": {
@@ -45,7 +45,8 @@
 				"sparkVersion": "3.3",
 				"nodeCount": 3,
 				"cores": 4,
-				"memory": 28
+				"memory": 28,
+				"automaticScaleJobs": false
 			},
 			"sessionKeepAliveTimeout": 30
 		},

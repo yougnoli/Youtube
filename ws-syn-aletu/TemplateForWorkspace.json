@@ -2316,7 +2316,7 @@
 					"name": "iss-position"
 				},
 				"content": {
-					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA iss;\n\nCREATE EXTERNAL DATA SOURCE [iss] WITH (LOCATION = 'abfss://iss-position@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE iss.ext_position\n\tWITH (\n\tLOCATION = 'position/',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/json**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c;",
+					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA iss;\n\nCREATE EXTERNAL DATA SOURCE [iss] WITH (LOCATION = 'abfss://iss-position@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE iss.cetas_position\n\tWITH (\n\tLOCATION = 'cetas-ouput/parquet/',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/json/**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c;",
 					"metadata": {
 						"language": "sql"
 					},
@@ -2331,7 +2331,7 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/query-extTable-iss')]",
+			"name": "[concat(parameters('workspaceName'), '/query-cetas-iss')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -2339,7 +2339,7 @@
 					"name": "iss-position"
 				},
 				"content": {
-					"query": "SELECT * \nFROM iss.ext_position\n\n-- Creare una external table con metodo CETAS non vuol dire che continua a prendere dati (nuovi che entrano) dalla posizione di sorgente e crearne nella posizione di destinazione",
+					"query": "SELECT * \nFROM iss.cetas_position\n\n-- Creare una external table con metodo CETAS non vuol dire che continua a prendere dati (nuovi che entrano) dalla posizione di sorgente e non ne crea ulteriori nella posizione di destinazione.\n-- Quindi sto interrogando i dati che ho generato AL MOMENTO della creazione della external table con metodo CETAS",
 					"metadata": {
 						"language": "sql"
 					},
@@ -2490,12 +2490,15 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/SQL script 1')]",
+			"name": "[concat(parameters('workspaceName'), '/extTable-parquet')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
 				"content": {
-					"query": "CREATE EXTERNAL TABLE iss.ext_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'raw/serverless/parquet/**',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n\nSELECT * FROM iss.ext_position;\nGO",
+					"query": "-- Creazione di una external table senza il metodo CETAS\nCREATE EXTERNAL TABLE iss.ext_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'raw/serverless/parquet/**',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n-- Il lancio della query, mi fa ritrovare i nuovi record (ho specificato solo la sorgente al momento della creazione)\nSELECT * FROM iss.ext_position;\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -2504,6 +2507,23 @@
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQL script 1')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"metadata": {
+						"language": "sql"
+					}
 				},
 				"type": "SqlQuery"
 			},

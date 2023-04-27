@@ -16,7 +16,7 @@
 			"recurrence": {
 				"frequency": "Minute",
 				"interval": 1,
-				"startTime": "2023-04-27T19:45:00",
+				"startTime": "2023-04-27T15:45:00",
 				"endTime": "2023-04-28T21:00:00",
 				"timeZone": "W. Europe Standard Time"
 			}

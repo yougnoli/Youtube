@@ -2,7 +2,7 @@
 	"name": "optimize-delta-table",
 	"properties": {
 		"folder": {
-			"name": "optimize-delta"
+			"name": "sanfrancisco/optimize-delta"
 		},
 		"nbformat": 4,
 		"nbformat_minor": 2,
@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "76bcc04b-af49-4ee0-a12e-24b3bbf023b6"
+				"spark.autotune.trackingId": "3b7cb0c0-dda2-407b-8247-378affc032f6"
 			}
 		},
 		"metadata": {

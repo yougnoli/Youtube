@@ -110,6 +110,117 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/load-iss-parquet')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "HttpReadSettings",
+									"requestMethod": "GET"
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['timestamp']"
+										},
+										"sink": {
+											"name": "timestamp",
+											"type": "Int64"
+										}
+									},
+									{
+										"source": {
+											"path": "$['message']"
+										},
+										"sink": {
+											"name": "message",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['iss_position']['latitude']"
+										},
+										"sink": {
+											"name": "latitude",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['iss_position']['longitude']"
+										},
+										"sink": {
+											"name": "longitude",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "iss_position",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "iss_position_ouput",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "serverless"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/iss_position')]",
+				"[concat(variables('workspaceId'), '/datasets/iss_position_ouput')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/update-external-table')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
@@ -234,6 +345,31 @@
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/linkedServices/HttpServerISS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/iss_position_ouput')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "raw/serverless/parquet",
+						"fileSystem": "iss-position"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/ws-syn-aletu-WorkspaceDefaultStorage')]"
 			]
 		},
 		{
@@ -366,6 +502,45 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/tr_iss_scheduled')]",
+			"type": "Microsoft.Synapse/workspaces/triggers",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "load-iss-parquet",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					},
+					{
+						"pipelineReference": {
+							"referenceName": "load-iss-json",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Minute",
+						"interval": 1,
+						"startTime": "2023-04-27T15:45:00",
+						"endTime": "2023-04-28T21:00:00",
+						"timeZone": "W. Europe Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/load-iss-parquet')]",
+				"[concat(variables('workspaceId'), '/pipelines/load-iss-json')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
 			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
 			"apiVersion": "2019-06-01-preview",
@@ -391,6 +566,29 @@
 			"properties": {
 				"type": "ManagedIdentity",
 				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/cetas-iss')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA iss;\n\nCREATE EXTERNAL DATA SOURCE [iss] WITH (LOCATION = 'abfss://iss-position@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE iss.cetas_position\n\tWITH (\n\tLOCATION = 'cetas-output/parquet/',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/json/**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
 			},
 			"dependsOn": []
 		},
@@ -565,6 +763,29 @@
 				},
 				"content": {
 					"query": "/*\nhttps://learn.microsoft.com/en-us/azure/synapse-analytics/sql/develop-tables-statistics\n*/\n\n----- usare database per Serverless \n\nUSE LogicalDWH;\nGO\n\n----- creare formato del file (in questo caso la fonte dato e' gia' stata creata)\n\nCREATE EXTERNAL FILE FORMAT [csv_taxi] \n\tWITH ( FORMAT_TYPE = DELIMITEDTEXT ,\n\t       FORMAT_OPTIONS (FIELD_TERMINATOR = '|', FIRST_ROW = 2, USE_TYPE_DEFAULT = FALSE)\n\t\t   );\nGO\n\n----- creare external table\n\nCREATE EXTERNAL TABLE taxi.payment_2015_csv\n\tWITH (\n\tLOCATION = '2015/',\n\tDATA_SOURCE = [nyctaxi],\n\tFILE_FORMAT = [csv_taxi]\n\t) AS\nSELECT\n    tpepPickupDateTime\n    ,paymentType\n    ,totalAmount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2015/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n-- no statistiche create\n-----\n\nSELECT top 1000 * FROM taxi.payment_2015_csv\n----- statistiche non create per questa query\n-----\n-- lancio 1\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {7CF6E133-3A79-4AC9-AC0D-00ED639278AF} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {FDBA24F2-0A52-4AD6-B2FB-E51653220C67}. Total size of data scanned is 6728 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:23.797\n*/\n-- creato solo Internal Cardinality Query (7 sec)\n\n-- lancio 2\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {0819995E-848B-4B3C-94BA-1A7F2C9E7B82} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {8A4A2EB2-6F3E-45B7-B28A-93D0EDB24785}. Total size of data scanned is 6728 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:17.429\n*/\n-- non ha creato nulla. NOTA: 23.7 - 17.4 = circa 7 secondi (overhead della Internal Cardinality Query)\n\n-- creo statistiche:\nCREATE STATISTICS puDateTime_Stats\nON taxi.payment_2015_csv(tpepPickupDateTime)\nWITH FULLSCAN, NORECOMPUTE\nGO\n\nCREATE STATISTICS paymentType_Stats\nON taxi.payment_2015_csv(paymentType)\nWITH FULLSCAN, NORECOMPUTE\nGO\n\n-- lancio 3\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {70F00262-3658-4E0E-8E07-5F1F09A77756} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {5DD9F88A-5608-44DC-BF61-8799A9CAE8BC}. Total size of data scanned is 6728 megabytes, total size of data moved is 3585 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:28.146\n*/\n\n-- lancio 4\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {13F23D57-779D-4E9C-8B54-1B44ABEC4A9C} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {F7D71C00-F176-4C3B-AC0B-A79C87836463}. Total size of data scanned is 6728 megabytes, total size of data moved is 3585 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:23.698\n*/\n\n\n\n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/extTable-parquet')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"query": "-- Creazione di una external table senza il metodo CETAS\nCREATE EXTERNAL TABLE iss.ext_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'raw/serverless/parquet/**',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n-- Il lancio della query, mi fa ritrovare i nuovi record (ho specificato solo la sorgente al momento della creazione)\nSELECT * FROM iss.ext_position;\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -786,6 +1007,29 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/query-cetas-iss')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"query": "SELECT * \nFROM iss.cetas_position\n\n-- Creare una external table con metodo CETAS non vuol dire che continua a prendere dati (nuovi che entrano) dalla posizione di sorgente e non ne crea ulteriori nella posizione di destinazione.\n-- Quindi sto interrogando i dati che ho generato AL MOMENTO della creazione della external table con metodo CETAS",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/query-extTable-taxi')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -956,6 +1200,29 @@
 				},
 				"content": {
 					"query": "CREATE PROCEDURE ldw.ctas_renew\nAS\n    BEGIN\n        IF EXISTS (SELECT [name] FROM [sys].[external_tables] WHERE [name] = 'call_2020_agg')\n        BEGIN\n            DROP EXTERNAL TABLE ldw.call_2020_agg;\n        END\n        CREATE EXTERNAL TABLE ldw.call_2020_agg\n            WITH (\n            LOCATION = '2020/',\n            DATA_SOURCE = [sanfranciscofireworkers],\n            FILE_FORMAT = [parquet]\n            ) AS\n        SELECT\n            DATENAME(MONTH, dateTime) AS monthname\n            ,dataType\n            ,dataSubtype\n            ,subcategory\n            ,COUNT(*) AS num\n        FROM\n            OPENROWSET(\n                BULK 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2020/month=*/**',\n                FORMAT = 'PARQUET'\n            ) AS [result]\n        GROUP BY DATENAME(MONTH, dateTime), dataType, dataSubtype, subcategory;            \n    END;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/vista-vs-extTable')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"query": "-- creazione vista che punta ai dati di ingresso (che sta leggendo anche la external table)\nCREATE VIEW iss.vw_position\nAS  \n    SELECT *\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/parquet/**',\n            FORMAT = 'PARQUET'\n        ) AS [result];\n\n-- external table creata precedentemente\nSELECT * FROM iss.ext_position\n/*\nStatement ID: {003658F5-4D4B-4323-AF18-1AF87806B862} | Query hash: 0x2A56A01209013C21 | Distributed request ID: {677546CD-1C07-4B9B-9F37-CF0FBD235363}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(30 records affected)\n\nTotal execution time: 00:00:00.990\n*/\n\n-- vista appena creata\nSELECT * FROM iss.vw_position\n/*\nStatement ID: {3651C063-7442-4666-9F4F-35E462CF10DB} | Query hash: 0xD5A7FE4E630A611C | Distributed request ID: {FC9D4F89-0EDA-417F-A3DD-576BBB05C07D}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(30 records affected)\n\nTotal execution time: 00:00:01.360\n*/",
 					"metadata": {
 						"language": "sql"
 					},
@@ -2267,273 +2534,6 @@
 			},
 			"dependsOn": [],
 			"location": "westeurope"
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/tr_iss_scheduled')]",
-			"type": "Microsoft.Synapse/workspaces/triggers",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"annotations": [],
-				"runtimeState": "Started",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "load-iss-parquet",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					},
-					{
-						"pipelineReference": {
-							"referenceName": "load-iss-json",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
-				"type": "ScheduleTrigger",
-				"typeProperties": {
-					"recurrence": {
-						"frequency": "Minute",
-						"interval": 1,
-						"startTime": "2023-04-27T15:45:00",
-						"endTime": "2023-04-28T21:00:00",
-						"timeZone": "W. Europe Standard Time"
-					}
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/pipelines/load-iss-parquet')]",
-				"[concat(variables('workspaceId'), '/pipelines/load-iss-json')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/cetas-iss')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "iss-position"
-				},
-				"content": {
-					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA iss;\n\nCREATE EXTERNAL DATA SOURCE [iss] WITH (LOCATION = 'abfss://iss-position@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE iss.cetas_position\n\tWITH (\n\tLOCATION = 'cetas-ouput/parquet/',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/json/**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c;",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "LogicalDWH",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/query-cetas-iss')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "iss-position"
-				},
-				"content": {
-					"query": "SELECT * \nFROM iss.cetas_position\n\n-- Creare una external table con metodo CETAS non vuol dire che continua a prendere dati (nuovi che entrano) dalla posizione di sorgente e non ne crea ulteriori nella posizione di destinazione.\n-- Quindi sto interrogando i dati che ho generato AL MOMENTO della creazione della external table con metodo CETAS",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "LogicalDWH",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/load-iss-parquet')]",
-			"type": "Microsoft.Synapse/workspaces/pipelines",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"activities": [
-					{
-						"name": "Get data",
-						"type": "Copy",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "JsonSource",
-								"storeSettings": {
-									"type": "HttpReadSettings",
-									"requestMethod": "GET"
-								},
-								"formatSettings": {
-									"type": "JsonReadSettings"
-								}
-							},
-							"sink": {
-								"type": "ParquetSink",
-								"storeSettings": {
-									"type": "AzureBlobFSWriteSettings"
-								},
-								"formatSettings": {
-									"type": "ParquetWriteSettings"
-								}
-							},
-							"enableStaging": false,
-							"translator": {
-								"type": "TabularTranslator",
-								"mappings": [
-									{
-										"source": {
-											"path": "$['timestamp']"
-										},
-										"sink": {
-											"name": "timestamp",
-											"type": "Int64"
-										}
-									},
-									{
-										"source": {
-											"path": "$['message']"
-										},
-										"sink": {
-											"name": "message",
-											"type": "String"
-										}
-									},
-									{
-										"source": {
-											"path": "$['iss_position']['latitude']"
-										},
-										"sink": {
-											"name": "latitude",
-											"type": "String"
-										}
-									},
-									{
-										"source": {
-											"path": "$['iss_position']['longitude']"
-										},
-										"sink": {
-											"name": "longitude",
-											"type": "String"
-										}
-									}
-								]
-							}
-						},
-						"inputs": [
-							{
-								"referenceName": "iss_position",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "iss_position_ouput",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						]
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"folder": {
-					"name": "serverless"
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/datasets/iss_position')]",
-				"[concat(variables('workspaceId'), '/datasets/iss_position_ouput')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/iss_position_ouput')]",
-			"type": "Microsoft.Synapse/workspaces/datasets",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "Parquet",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"folderPath": "raw/serverless/parquet",
-						"fileSystem": "iss-position"
-					},
-					"compressionCodec": "snappy"
-				},
-				"schema": []
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/linkedServices/ws-syn-aletu-WorkspaceDefaultStorage')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/extTable-parquet')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "iss-position"
-				},
-				"content": {
-					"query": "-- Creazione di una external table senza il metodo CETAS\nCREATE EXTERNAL TABLE iss.ext_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'raw/serverless/parquet/**',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n-- Il lancio della query, mi fa ritrovare i nuovi record (ho specificato solo la sorgente al momento della creazione)\nSELECT * FROM iss.ext_position;\n",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "LogicalDWH",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/vista-vs-extTable')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "iss-position"
-				},
-				"content": {
-					"query": "-- creazione vista che punta ai dati di ingresso (che sta leggendo anche la external table)\nCREATE VIEW iss.vw_position\nAS  \n    SELECT *\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/parquet/**',\n            FORMAT = 'PARQUET'\n        ) AS [result];\n\n-- external table creata precedentemente\nSELECT * FROM iss.ext_position\n/*\nStatement ID: {003658F5-4D4B-4323-AF18-1AF87806B862} | Query hash: 0x2A56A01209013C21 | Distributed request ID: {677546CD-1C07-4B9B-9F37-CF0FBD235363}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(30 records affected)\n\nTotal execution time: 00:00:00.990\n*/\n\n-- vista appena creata\nSELECT * FROM iss.vw_position\n/*\nStatement ID: {3651C063-7442-4666-9F4F-35E462CF10DB} | Query hash: 0xD5A7FE4E630A611C | Distributed request ID: {FC9D4F89-0EDA-417F-A3DD-576BBB05C07D}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(30 records affected)\n\nTotal execution time: 00:00:01.360\n*/",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "LogicalDWH",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
 		}
 	]
 }

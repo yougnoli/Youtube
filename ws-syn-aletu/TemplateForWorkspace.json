@@ -259,7 +259,7 @@
 							"value": "@{dataset().fileName}.json",
 							"type": "Expression"
 						},
-						"folderPath": "raw/serverless",
+						"folderPath": "raw/serverless/json",
 						"fileSystem": "iss-position"
 					}
 				},
@@ -2316,7 +2316,7 @@
 					"name": "iss-position"
 				},
 				"content": {
-					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA iss;\n\nCREATE EXTERNAL DATA SOURCE [iss] WITH (LOCATION = 'abfss://iss-position@datalakeytaletu.dfs.core.windows.net/parquet/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE iss.ext_position\n\tWITH (\n\tLOCATION = 'position/',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/json**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c;",
+					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA iss;\n\nCREATE EXTERNAL DATA SOURCE [iss] WITH (LOCATION = 'abfss://iss-position@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE iss.ext_position\n\tWITH (\n\tLOCATION = 'position/',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/json**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c;",
 					"metadata": {
 						"language": "sql"
 					},
@@ -2495,15 +2495,17 @@
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
 				"content": {
-					"query": "IF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'SynapseParquetFormat') \n\tCREATE EXTERNAL FILE FORMAT [SynapseParquetFormat] \n\tWITH ( FORMAT_TYPE = PARQUET)\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'iss-position_datalakeytaletu_dfs_core_windows_net') \n\tCREATE EXTERNAL DATA SOURCE [iss-position_datalakeytaletu_dfs_core_windows_net] \n\tWITH (\n\t\tLOCATION = 'abfss://iss-position@datalakeytaletu.dfs.core.windows.net' \n\t)\nGO\n\nCREATE EXTERNAL TABLE dbo.ETH (\n\t[timestamp] bigint,\n\t[message] nvarchar(4000),\n\t[latitude] nvarchar(4000),\n\t[longitude] nvarchar(4000)\n\t)\n\tWITH (\n\tLOCATION = 'raw/serverless/parquet/**',\n\tDATA_SOURCE = [iss-position_datalakeytaletu_dfs_core_windows_net],\n\tFILE_FORMAT = [SynapseParquetFormat]\n\t)\nGO\n\n\nSELECT TOP 100 * FROM dbo.ETH\nGO",
+					"query": "CREATE EXTERNAL TABLE iss.ext_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'raw/serverless/parquet/**',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n\nSELECT * FROM iss.ext_position;\nGO",
 					"metadata": {
 						"language": "sql"
 					},
 					"currentConnection": {
 						"databaseName": "LogicalDWH",
 						"poolName": "Built-in"
-					}
-				}
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
 			},
 			"dependsOn": []
 		}

@@ -16,6 +16,9 @@
 		},
 		"ws-syn-aletu-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"value": "https://datalakeytaletu.dfs.core.windows.net"
+		},
+		"HttpServerISS_properties_typeProperties_url": {
+			"value": "http://api.open-notify.org/iss-now.json"
 		}
 	}
 }

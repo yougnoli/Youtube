@@ -1,0 +1,20 @@
+{
+	"name": "vista-vs-extTable",
+	"properties": {
+		"folder": {
+			"name": "iss-position"
+		},
+		"content": {
+			"query": "-- creazione vista che punta ai dati di ingresso (che sta leggendo anche la external table)\nCREATE VIEW iss.vw_position\nAS  \n    SELECT *\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/parquet/**',\n            FORMAT = 'PARQUET'\n        ) AS [result];\n\n-- external table creata precedentemente\nSELECT * FROM iss.ext_position\n/*\nStatement ID: {003658F5-4D4B-4323-AF18-1AF87806B862} | Query hash: 0x2A56A01209013C21 | Distributed request ID: {677546CD-1C07-4B9B-9F37-CF0FBD235363}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(30 records affected)\n\nTotal execution time: 00:00:00.990\n*/\n\n-- vista appena creata\nSELECT * FROM iss.vw_position\n/*\nStatement ID: {3651C063-7442-4666-9F4F-35E462CF10DB} | Query hash: 0xD5A7FE4E630A611C | Distributed request ID: {FC9D4F89-0EDA-417F-A3DD-576BBB05C07D}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(30 records affected)\n\nTotal execution time: 00:00:01.360\n*/",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LogicalDWH",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

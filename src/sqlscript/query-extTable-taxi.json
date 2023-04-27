@@ -1,0 +1,20 @@
+{
+	"name": "query-extTable-taxi",
+	"properties": {
+		"folder": {
+			"name": "taxi/serverless/cetas"
+		},
+		"content": {
+			"query": "-- external table\nSELECT * FROM taxi.rate_2010_agg\n/*\nStatement ID: {3FE2F3E5-BAE4-424A-A449-57BDBF90F49C} | Query hash: 0x45AEFC68D5DEC3D4 | Distributed request ID: {057806A7-165A-4993-969E-B541D102A43B}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(35 records affected)\n\nTotal execution time: 00:00:05.390\n*/",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LogicalDWH",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

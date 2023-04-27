@@ -1,0 +1,20 @@
+{
+	"name": "cetas-taxi",
+	"properties": {
+		"folder": {
+			"name": "taxi/serverless/cetas"
+		},
+		"content": {
+			"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA taxi;\n\nCREATE EXTERNAL DATA SOURCE [nyctaxi] WITH (LOCATION = 'abfss://yellowtaxi@datalakeytaletu.dfs.core.windows.net/nyc/raw/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE taxi.rate_2010_agg\n\tWITH (\n\tLOCATION = '2010/',\n\tDATA_SOURCE = [nyctaxi],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    rateCodeId\n    ,SUM(CAST(passengerCount AS BIGINT)) AS PassengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2010/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY rateCodeId;",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LogicalDWH",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

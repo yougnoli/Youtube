@@ -17,6 +17,10 @@
 			"metadata": "Secure string for 'connectionString' of 'ws-syn-aletu-WorkspaceDefaultSqlServer'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:ws-syn-aletu.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
 		},
+		"HttpServerISS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "http://api.open-notify.org/iss-now.json"
+		},
 		"nyc_tlc_yellow_sasUri": {
 			"type": "secureString",
 			"metadata": "Secure string for 'sasUri' of 'nyc_tlc_yellow'"
@@ -24,16 +28,87 @@
 		"ws-syn-aletu-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://datalakeytaletu.dfs.core.windows.net"
-		},
-		"HttpServerISS_properties_typeProperties_url": {
-			"type": "string",
-			"defaultValue": "http://api.open-notify.org/iss-now.json"
 		}
 	},
 	"variables": {
 		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/load-iss')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "HttpReadSettings",
+									"requestMethod": "GET"
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "JsonSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "JsonWriteSettings"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "iss_position",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "iss_position_output",
+								"type": "DatasetReference",
+								"parameters": {
+									"fileName": {
+										"value": "@{utcnow()}",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "serverless"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/iss_position')]",
+				"[concat(variables('workspaceId'), '/datasets/iss_position_output')]"
+			]
+		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/update-external-table')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
@@ -137,6 +212,82 @@
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/linkedServices/ws-syn-aletu-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/iss_position')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "HttpServerISS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "HttpServerLocation"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/HttpServerISS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/iss_position_output')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"fileName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@{dataset().fileName}.json",
+							"type": "Expression"
+						},
+						"folderPath": "raw/serverless",
+						"fileSystem": "iss-position"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/ws-syn-aletu-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/HttpServerISS')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "HttpServer",
+				"typeProperties": {
+					"url": "[parameters('HttpServerISS_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
 			]
 		},
 		{
@@ -244,6 +395,29 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/cetas-taxi')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/cetas"
+				},
+				"content": {
+					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA taxi;\n\nCREATE EXTERNAL DATA SOURCE [nyctaxi] WITH (LOCATION = 'abfss://yellowtaxi@datalakeytaletu.dfs.core.windows.net/nyc/raw/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE taxi.rate_2010_agg\n\tWITH (\n\tLOCATION = '2010/',\n\tDATA_SOURCE = [nyctaxi],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    rateCodeId\n    ,SUM(CAST(passengerCount AS BIGINT)) AS PassengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2010/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY rateCodeId;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/cetas')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -313,6 +487,29 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/csv-performance-taxi')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/csv-vs-parquet"
+				},
+				"content": {
+					"query": "-- This is auto-generated code\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2010/puMonth=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\n/*\nStatement ID: {E88931D2-0017-4D92-AA26-23A19FCEF1E2} | Query hash: 0xCC5EFD1C8FDFE143 | Distributed request ID: {D313A941-724D-4624-BA3B-221FA315862D}. Total size of data scanned is 3 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(1 record affected)\n*/\n\n-----------------------------------------------------\n\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2010/puMonth=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result]\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {B00240AD-EE3C-41EB-9106-1BB3B9D4D057} | Query hash: 0x9F2693848479C4DF | Distributed request ID: {5DDC56E8-9B43-44C1-A5F6-7402C626D321}. Total size of data scanned is 3673 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(6 records affected)\n*/\n\n-----------------------------------------------------\n\nSELECT TOP 100000\n    tpepPickupDateTime\n    ,paymentType\n    ,passengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2010/puMonth=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\n/*\nStatement ID: {DC781DF1-C33E-4315-B79F-8A2AD4A7A984} | Query hash: 0x653D0D0BEBDE4F4A | Distributed request ID: {E72FAA28-A95B-4AB9-91FC-7F398CD09B73}. Total size of data scanned is 70 megabytes, total size of data moved is 9 megabytes, total size of data written is 0 megabytes.\n(5000 records affected)\n*/\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/csv-performance')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -350,6 +547,29 @@
 					},
 					"currentConnection": {
 						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/extTable-csv-statistics')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/statistics"
+				},
+				"content": {
+					"query": "/*\nhttps://learn.microsoft.com/en-us/azure/synapse-analytics/sql/develop-tables-statistics\n*/\n\n----- usare database per Serverless \n\nUSE LogicalDWH;\nGO\n\n----- creare formato del file (in questo caso la fonte dato e' gia' stata creata)\n\nCREATE EXTERNAL FILE FORMAT [csv_taxi] \n\tWITH ( FORMAT_TYPE = DELIMITEDTEXT ,\n\t       FORMAT_OPTIONS (FIELD_TERMINATOR = '|', FIRST_ROW = 2, USE_TYPE_DEFAULT = FALSE)\n\t\t   );\nGO\n\n----- creare external table\n\nCREATE EXTERNAL TABLE taxi.payment_2015_csv\n\tWITH (\n\tLOCATION = '2015/',\n\tDATA_SOURCE = [nyctaxi],\n\tFILE_FORMAT = [csv_taxi]\n\t) AS\nSELECT\n    tpepPickupDateTime\n    ,paymentType\n    ,totalAmount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2015/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n-- no statistiche create\n-----\n\nSELECT top 1000 * FROM taxi.payment_2015_csv\n----- statistiche non create per questa query\n-----\n-- lancio 1\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {7CF6E133-3A79-4AC9-AC0D-00ED639278AF} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {FDBA24F2-0A52-4AD6-B2FB-E51653220C67}. Total size of data scanned is 6728 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:23.797\n*/\n-- creato solo Internal Cardinality Query (7 sec)\n\n-- lancio 2\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {0819995E-848B-4B3C-94BA-1A7F2C9E7B82} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {8A4A2EB2-6F3E-45B7-B28A-93D0EDB24785}. Total size of data scanned is 6728 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:17.429\n*/\n-- non ha creato nulla. NOTA: 23.7 - 17.4 = circa 7 secondi (overhead della Internal Cardinality Query)\n\n-- creo statistiche:\nCREATE STATISTICS puDateTime_Stats\nON taxi.payment_2015_csv(tpepPickupDateTime)\nWITH FULLSCAN, NORECOMPUTE\nGO\n\nCREATE STATISTICS paymentType_Stats\nON taxi.payment_2015_csv(paymentType)\nWITH FULLSCAN, NORECOMPUTE\nGO\n\n-- lancio 3\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {70F00262-3658-4E0E-8E07-5F1F09A77756} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {5DD9F88A-5608-44DC-BF61-8799A9CAE8BC}. Total size of data scanned is 6728 megabytes, total size of data moved is 3585 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:28.146\n*/\n\n-- lancio 4\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {13F23D57-779D-4E9C-8B54-1B44ABEC4A9C} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {F7D71C00-F176-4C3B-AC0B-A79C87836463}. Total size of data scanned is 6728 megabytes, total size of data moved is 3585 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:23.698\n*/\n\n\n\n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
@@ -451,6 +671,52 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/parquet-partition-types-performance')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/parquet-performance"
+				},
+				"content": {
+					"query": "-- no partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/nonPartitionedParquet/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE CONVERT(DATE, tpepPickupDateTime) = '20100101' \nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {8D11681C-846B-4AC3-B11E-22D756CAAD56} | Query hash: 0x65FDC93AAB0473B9 | Distributed request ID: {64AE41C8-0B4B-474D-8FB9-A33386C38AFB}. Total size of data scanned is 19625 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:01:03.846\n*/\n\n-- year month partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE puDay = '01'\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {96827B68-F4E9-4D1D-AD36-EFD294A4B1EF} | Query hash: 0x39A2453CDE02D22F | Distributed request ID: {35025942-1EFD-40EA-BF99-218F138ED0A6}. Total size of data scanned is 32 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:00:09.404\n*/\n\n-- year month day partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/puDay=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {FF406F92-0562-493F-8384-D3073C94D84F} | Query hash: 0x9F2693848479C4DF | Distributed request ID: {B2E77C73-DF38-4DA0-85ED-F5AD058650B1}. Total size of data scanned is 2 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:00:09.611\n*/\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/parquet-performance-taxi')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/csv-vs-parquet"
+				},
+				"content": {
+					"query": "-- This is auto-generated code\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n/*\nStatement ID: {A7C65281-D86A-4C74-B287-DAD11CE942CA} | Query hash: 0xCC5EFD1C8FDFE143 | Distributed request ID: {61ABC47A-443E-4B3B-ACE7-742E3AECCEE7}. Total size of data scanned is 10 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(1 record affected)\n*/\n\n-----------------------------------------------\n\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {7884FD04-DAB9-43C9-BFEC-F474974014AC} | Query hash: 0x9F2693848479C4DF | Distributed request ID: {3CB1C784-9188-4E46-8BC9-0365726EA1D2}. Total size of data scanned is 51 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(6 records affected)\n*/\n\n-----------------------------------------------\n\nSELECT TOP 100000\n    tpepPickupDateTime\n    ,paymentType\n    ,passengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n/*\nStatement ID: {68749C7D-6ABC-4096-A451-3EE60A252F6A} | Query hash: 0x653D0D0BEBDE4F4A | Distributed request ID: {2092BBB8-8BCF-4740-9AB2-A3A79AAD4D58}. Total size of data scanned is 8 megabytes, total size of data moved is 10 megabytes, total size of data written is 0 megabytes.\n(5000 records affected)\n*/",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/parquet-performance')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -520,6 +786,29 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/query-extTable-taxi')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/cetas"
+				},
+				"content": {
+					"query": "-- external table\nSELECT * FROM taxi.rate_2010_agg\n/*\nStatement ID: {3FE2F3E5-BAE4-424A-A449-57BDBF90F49C} | Query hash: 0x45AEFC68D5DEC3D4 | Distributed request ID: {057806A7-165A-4993-969E-B541D102A43B}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(35 records affected)\n\nTotal execution time: 00:00:05.390\n*/",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/query-extTable')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -543,6 +832,52 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/query-iss-json')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"query": "-- This is auto-generated code\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/query-taxi')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/cetas"
+				},
+				"content": {
+					"query": "SELECT\n    rateCodeId\n    ,SUM(CAST(passengerCount AS BIGINT)) AS PassengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2010/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY rateCodeId;\n/*\nStatement ID: {23600A17-64CA-4473-BC27-162855F0EDB8} | Query hash: 0x2D8FE73BE2B45DCA | Distributed request ID: {4FCA6E01-A195-43EA-A0BD-061D847A6636}. Total size of data scanned is 95 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(35 records affected)\n\nTotal execution time: 00:00:24.373\n*/",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/query')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -557,6 +892,29 @@
 					},
 					"currentConnection": {
 						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/statistics-taxi')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/statistics"
+				},
+				"content": {
+					"query": "-- lanciare 3/4 volte\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2015/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\nORDER BY num DESC;\n/*\nStatement ID: {3C7C567F-CC02-4970-905B-AD76922A6CC9} | Query hash: 0x2CE30D7899EBE262 | Distributed request ID: {BE79CC69-AFCD-413D-97D3-719DB0A51DB9}. Total size of data scanned is 1134 megabytes, total size of data moved is 1608 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:07:07.694\n*/\n\nSELECT DISTINCT\n    vendorID\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2015/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n/*\nStatement ID: {B465DF17-537E-4A14-82B5-6C9556419B98} | Query hash: 0xFA39E48DDF423402 | Distributed request ID: {2E1D34CE-37CB-4F7A-BFE5-6B6040F3A787}. Total size of data scanned is 47 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(2 records affected)\n\nTotal execution time: 00:00:23.359\n*/",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
@@ -660,8 +1018,7 @@
 						"sparkVersion": "3.3",
 						"nodeCount": 3,
 						"cores": 4,
-						"memory": 28,
-						"automaticScaleJobs": false
+						"memory": 28
 					},
 					"sessionKeepAliveTimeout": 30
 				},
@@ -837,244 +1194,6 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/optimize-delta-table')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "sanfrancisco/optimize-delta"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"bigDataPool": {
-					"referenceName": "DevSparkPool",
-					"type": "BigDataPoolReference"
-				},
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "3b7cb0c0-dda2-407b-8247-378affc032f6"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "Synapse PySpark"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"a365ComputeOptions": {
-						"id": "/subscriptions/b812f629-6402-4f69-ab6a-880bd6a5c752/resourceGroups/rg-Youtube/providers/Microsoft.Synapse/workspaces/ws-syn-aletu/bigDataPools/DevSparkPool",
-						"name": "DevSparkPool",
-						"type": "Spark",
-						"endpoint": "https://ws-syn-aletu.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/DevSparkPool",
-						"auth": {
-							"type": "AAD",
-							"authResource": "https://dev.azuresynapse.net"
-						},
-						"sparkVersion": "3.3",
-						"nodeCount": 3,
-						"cores": 4,
-						"memory": 28,
-						"automaticScaleJobs": false
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"print('ready')"
-						],
-						"outputs": [],
-						"execution_count": 1
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							},
-							"microsoft": {
-								"language": "sparksql"
-							},
-							"collapsed": false
-						},
-						"source": [
-							"%%sql\r\n",
-							"\r\n",
-							"CREATE DATABASE optimize"
-						],
-						"outputs": [],
-						"execution_count": 11
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							},
-							"collapsed": false
-						},
-						"source": [
-							"Fire = spark.read.load('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/delta/', format='parquet')\r\n",
-							"\r\n",
-							"display(Fire.limit(5))"
-						],
-						"outputs": [],
-						"execution_count": 17
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							}
-						},
-						"source": [
-							"Fire.createOrReplaceTempView('Fire')"
-						],
-						"outputs": [],
-						"execution_count": 18
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							},
-							"microsoft": {
-								"language": "sparksql"
-							},
-							"collapsed": false
-						},
-						"source": [
-							"%%sql\r\n",
-							"\r\n",
-							"CREATE TABLE optimize.spark_fire\r\n",
-							"USING DELTA\r\n",
-							"LOCATION 'abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/deltaoptimize/'\r\n",
-							"    AS\r\n",
-							"    SELECT * FROM Fire"
-						],
-						"outputs": [],
-						"execution_count": 22
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							},
-							"microsoft": {
-								"language": "sparksql"
-							},
-							"collapsed": false
-						},
-						"source": [
-							"%%sql\r\n",
-							"\r\n",
-							"OPTIMIZE optimize.spark_fire"
-						],
-						"outputs": [],
-						"execution_count": 23
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							},
-							"microsoft": {
-								"language": "sparksql"
-							},
-							"collapsed": false
-						},
-						"source": [
-							"%%sql\r\n",
-							"\r\n",
-							"OPTIMIZE optimize.spark_fire ZORDER BY(dateTime)"
-						],
-						"outputs": [],
-						"execution_count": 24
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/DevSparkPool')]",
-			"type": "Microsoft.Synapse/workspaces/bigDataPools",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"autoPause": {
-					"enabled": true,
-					"delayInMinutes": 15
-				},
-				"autoScale": {
-					"enabled": false,
-					"maxNodeCount": 0,
-					"minNodeCount": 0
-				},
-				"nodeCount": 3,
-				"nodeSize": "Small",
-				"nodeSizeFamily": "MemoryOptimized",
-				"sparkVersion": "3.3",
-				"isComputeIsolationEnabled": false,
-				"sessionLevelPackagesEnabled": true,
-				"annotations": []
-			},
-			"dependsOn": [],
-			"location": "westeurope"
-		},
-		{
 			"name": "[concat(parameters('workspaceName'), '/create-data-taxi')]",
 			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
@@ -1123,8 +1242,7 @@
 						"sparkVersion": "3.3",
 						"nodeCount": 3,
 						"cores": 4,
-						"memory": 28,
-						"automaticScaleJobs": false
+						"memory": 28
 					},
 					"sessionKeepAliveTimeout": 30
 				},
@@ -1383,186 +1501,213 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/csv-performance-taxi')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"name": "[concat(parameters('workspaceName'), '/optimize-delta-table')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
 				"folder": {
-					"name": "taxi/serverless/csv-vs-parquet"
+					"name": "sanfrancisco/optimize-delta"
 				},
-				"content": {
-					"query": "-- This is auto-generated code\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2010/puMonth=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\n/*\nStatement ID: {E88931D2-0017-4D92-AA26-23A19FCEF1E2} | Query hash: 0xCC5EFD1C8FDFE143 | Distributed request ID: {D313A941-724D-4624-BA3B-221FA315862D}. Total size of data scanned is 3 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(1 record affected)\n*/\n\n-----------------------------------------------------\n\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2010/puMonth=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result]\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {B00240AD-EE3C-41EB-9106-1BB3B9D4D057} | Query hash: 0x9F2693848479C4DF | Distributed request ID: {5DDC56E8-9B43-44C1-A5F6-7402C626D321}. Total size of data scanned is 3673 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(6 records affected)\n*/\n\n-----------------------------------------------------\n\nSELECT TOP 100000\n    tpepPickupDateTime\n    ,paymentType\n    ,passengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2010/puMonth=01/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\n/*\nStatement ID: {DC781DF1-C33E-4315-B79F-8A2AD4A7A984} | Query hash: 0x653D0D0BEBDE4F4A | Distributed request ID: {E72FAA28-A95B-4AB9-91FC-7F398CD09B73}. Total size of data scanned is 70 megabytes, total size of data moved is 9 megabytes, total size of data written is 0 megabytes.\n(5000 records affected)\n*/\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "DevSparkPool",
+					"type": "BigDataPoolReference"
 				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/parquet-performance-taxi')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "taxi/serverless/csv-vs-parquet"
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "3b7cb0c0-dda2-407b-8247-378affc032f6"
+					}
 				},
-				"content": {
-					"query": "-- This is auto-generated code\nSELECT\n    TOP 1 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n/*\nStatement ID: {A7C65281-D86A-4C74-B287-DAD11CE942CA} | Query hash: 0xCC5EFD1C8FDFE143 | Distributed request ID: {61ABC47A-443E-4B3B-ACE7-742E3AECCEE7}. Total size of data scanned is 10 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(1 record affected)\n*/\n\n-----------------------------------------------\n\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {7884FD04-DAB9-43C9-BFEC-F474974014AC} | Query hash: 0x9F2693848479C4DF | Distributed request ID: {3CB1C784-9188-4E46-8BC9-0365726EA1D2}. Total size of data scanned is 51 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(6 records affected)\n*/\n\n-----------------------------------------------\n\nSELECT TOP 100000\n    tpepPickupDateTime\n    ,paymentType\n    ,passengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n/*\nStatement ID: {68749C7D-6ABC-4096-A451-3EE60A252F6A} | Query hash: 0x653D0D0BEBDE4F4A | Distributed request ID: {2092BBB8-8BCF-4740-9AB2-A3A79AAD4D58}. Total size of data scanned is 8 megabytes, total size of data moved is 10 megabytes, total size of data written is 0 megabytes.\n(5000 records affected)\n*/",
-					"metadata": {
-						"language": "sql"
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
 					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
+					"language_info": {
+						"name": "python"
 					},
-					"resultLimit": 5000
+					"a365ComputeOptions": {
+						"id": "/subscriptions/b812f629-6402-4f69-ab6a-880bd6a5c752/resourceGroups/rg-Youtube/providers/Microsoft.Synapse/workspaces/ws-syn-aletu/bigDataPools/DevSparkPool",
+						"name": "DevSparkPool",
+						"type": "Spark",
+						"endpoint": "https://ws-syn-aletu.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/DevSparkPool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
 				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/parquet-partition-types-performance')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "taxi/serverless/parquet-performance"
-				},
-				"content": {
-					"query": "-- no partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/nonPartitionedParquet/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE CONVERT(DATE, tpepPickupDateTime) = '20100101' \nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {8D11681C-846B-4AC3-B11E-22D756CAAD56} | Query hash: 0x65FDC93AAB0473B9 | Distributed request ID: {64AE41C8-0B4B-474D-8FB9-A33386C38AFB}. Total size of data scanned is 19625 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:01:03.846\n*/\n\n-- year month partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2010/puMonth=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE puDay = '01'\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {96827B68-F4E9-4D1D-AD36-EFD294A4B1EF} | Query hash: 0x39A2453CDE02D22F | Distributed request ID: {35025942-1EFD-40EA-BF99-218F138ED0A6}. Total size of data scanned is 32 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:00:09.404\n*/\n\n-- year month day partition\nSELECT\n    paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2010/puMonth=01/puDay=01/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY paymentType\nORDER BY num DESC;\n\n/*\nStatement ID: {FF406F92-0562-493F-8384-D3073C94D84F} | Query hash: 0x9F2693848479C4DF | Distributed request ID: {B2E77C73-DF38-4DA0-85ED-F5AD058650B1}. Total size of data scanned is 2 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(4 records affected)\n\nTotal execution time: 00:00:09.611\n*/\n",
-					"metadata": {
-						"language": "sql"
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"print('ready')"
+						],
+						"outputs": [],
+						"execution_count": 1
 					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							},
+							"collapsed": false
+						},
+						"source": [
+							"%%sql\r\n",
+							"\r\n",
+							"CREATE DATABASE optimize"
+						],
+						"outputs": [],
+						"execution_count": 11
 					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/cetas-taxi')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "taxi/serverless/cetas"
-				},
-				"content": {
-					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA taxi;\n\nCREATE EXTERNAL DATA SOURCE [nyctaxi] WITH (LOCATION = 'abfss://yellowtaxi@datalakeytaletu.dfs.core.windows.net/nyc/raw/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE taxi.rate_2010_agg\n\tWITH (\n\tLOCATION = '2010/',\n\tDATA_SOURCE = [nyctaxi],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    rateCodeId\n    ,SUM(CAST(passengerCount AS BIGINT)) AS PassengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2010/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY rateCodeId;",
-					"metadata": {
-						"language": "sql"
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": false
+						},
+						"source": [
+							"Fire = spark.read.load('abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/delta/', format='parquet')\r\n",
+							"\r\n",
+							"display(Fire.limit(5))"
+						],
+						"outputs": [],
+						"execution_count": 17
 					},
-					"currentConnection": {
-						"databaseName": "LogicalDWH",
-						"poolName": "Built-in"
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"Fire.createOrReplaceTempView('Fire')"
+						],
+						"outputs": [],
+						"execution_count": 18
 					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/query-taxi')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "taxi/serverless/cetas"
-				},
-				"content": {
-					"query": "SELECT\n    rateCodeId\n    ,SUM(CAST(passengerCount AS BIGINT)) AS PassengerCount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2010/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY rateCodeId;\n/*\nStatement ID: {23600A17-64CA-4473-BC27-162855F0EDB8} | Query hash: 0x2D8FE73BE2B45DCA | Distributed request ID: {4FCA6E01-A195-43EA-A0BD-061D847A6636}. Total size of data scanned is 95 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(35 records affected)\n\nTotal execution time: 00:00:24.373\n*/",
-					"metadata": {
-						"language": "sql"
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							},
+							"collapsed": false
+						},
+						"source": [
+							"%%sql\r\n",
+							"\r\n",
+							"CREATE TABLE optimize.spark_fire\r\n",
+							"USING DELTA\r\n",
+							"LOCATION 'abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/deltaoptimize/'\r\n",
+							"    AS\r\n",
+							"    SELECT * FROM Fire"
+						],
+						"outputs": [],
+						"execution_count": 22
 					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							},
+							"collapsed": false
+						},
+						"source": [
+							"%%sql\r\n",
+							"\r\n",
+							"OPTIMIZE optimize.spark_fire"
+						],
+						"outputs": [],
+						"execution_count": 23
 					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/query-extTable-taxi')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "taxi/serverless/cetas"
-				},
-				"content": {
-					"query": "-- external table\nSELECT * FROM taxi.rate_2010_agg\n/*\nStatement ID: {3FE2F3E5-BAE4-424A-A449-57BDBF90F49C} | Query hash: 0x45AEFC68D5DEC3D4 | Distributed request ID: {057806A7-165A-4993-969E-B541D102A43B}. Total size of data scanned is 1 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(35 records affected)\n\nTotal execution time: 00:00:05.390\n*/",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "LogicalDWH",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/statistics-taxi')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "taxi/serverless/statistics"
-				},
-				"content": {
-					"query": "-- lanciare 3/4 volte\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2015/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\nORDER BY num DESC;\n/*\nStatement ID: {3C7C567F-CC02-4970-905B-AD76922A6CC9} | Query hash: 0x2CE30D7899EBE262 | Distributed request ID: {BE79CC69-AFCD-413D-97D3-719DB0A51DB9}. Total size of data scanned is 1134 megabytes, total size of data moved is 1608 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:07:07.694\n*/\n\nSELECT DISTINCT\n    vendorID\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2015/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n/*\nStatement ID: {B465DF17-537E-4A14-82B5-6C9556419B98} | Query hash: 0xFA39E48DDF423402 | Distributed request ID: {2E1D34CE-37CB-4F7A-BFE5-6B6040F3A787}. Total size of data scanned is 47 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(2 records affected)\n\nTotal execution time: 00:00:23.359\n*/",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/extTable-csv-statistics')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "taxi/serverless/statistics"
-				},
-				"content": {
-					"query": "/*\nhttps://learn.microsoft.com/en-us/azure/synapse-analytics/sql/develop-tables-statistics\n*/\n\n----- usare database per Serverless \n\nUSE LogicalDWH;\nGO\n\n----- creare formato del file (in questo caso la fonte dato e' gia' stata creata)\n\nCREATE EXTERNAL FILE FORMAT [csv_taxi] \n\tWITH ( FORMAT_TYPE = DELIMITEDTEXT ,\n\t       FORMAT_OPTIONS (FIELD_TERMINATOR = '|', FIRST_ROW = 2, USE_TYPE_DEFAULT = FALSE)\n\t\t   );\nGO\n\n----- creare external table\n\nCREATE EXTERNAL TABLE taxi.payment_2015_csv\n\tWITH (\n\tLOCATION = '2015/',\n\tDATA_SOURCE = [nyctaxi],\n\tFILE_FORMAT = [csv_taxi]\n\t) AS\nSELECT\n    tpepPickupDateTime\n    ,paymentType\n    ,totalAmount\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/csv/puYear=2015/**',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        FIELDTERMINATOR = '|',\n        FIELDQUOTE = '\"',\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n-- no statistiche create\n-----\n\nSELECT top 1000 * FROM taxi.payment_2015_csv\n----- statistiche non create per questa query\n-----\n-- lancio 1\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {7CF6E133-3A79-4AC9-AC0D-00ED639278AF} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {FDBA24F2-0A52-4AD6-B2FB-E51653220C67}. Total size of data scanned is 6728 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:23.797\n*/\n-- creato solo Internal Cardinality Query (7 sec)\n\n-- lancio 2\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {0819995E-848B-4B3C-94BA-1A7F2C9E7B82} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {8A4A2EB2-6F3E-45B7-B28A-93D0EDB24785}. Total size of data scanned is 6728 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:17.429\n*/\n-- non ha creato nulla. NOTA: 23.7 - 17.4 = circa 7 secondi (overhead della Internal Cardinality Query)\n\n-- creo statistiche:\nCREATE STATISTICS puDateTime_Stats\nON taxi.payment_2015_csv(tpepPickupDateTime)\nWITH FULLSCAN, NORECOMPUTE\nGO\n\nCREATE STATISTICS paymentType_Stats\nON taxi.payment_2015_csv(paymentType)\nWITH FULLSCAN, NORECOMPUTE\nGO\n\n-- lancio 3\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {70F00262-3658-4E0E-8E07-5F1F09A77756} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {5DD9F88A-5608-44DC-BF61-8799A9CAE8BC}. Total size of data scanned is 6728 megabytes, total size of data moved is 3585 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:28.146\n*/\n\n-- lancio 4\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,AVG(totalAmount) avgTotalAmount\n    ,count(*) as numRows\nFROM taxi.payment_2015_csv\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\n/*\nStatement ID: {13F23D57-779D-4E9C-8B54-1B44ABEC4A9C} | Query hash: 0x5719087CDDA024DF | Distributed request ID: {F7D71C00-F176-4C3B-AC0B-A79C87836463}. Total size of data scanned is 6728 megabytes, total size of data moved is 3585 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:00:23.698\n*/\n\n\n\n\n\n\n",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "LogicalDWH",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							},
+							"collapsed": false
+						},
+						"source": [
+							"%%sql\r\n",
+							"\r\n",
+							"OPTIMIZE optimize.spark_fire ZORDER BY(dateTime)"
+						],
+						"outputs": [],
+						"execution_count": 24
+					}
+				]
 			},
 			"dependsOn": []
 		},
@@ -1615,15 +1760,13 @@
 						"sparkVersion": "3.3",
 						"nodeCount": 3,
 						"cores": 4,
-						"memory": 28,
-						"automaticScaleJobs": false
+						"memory": 28
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"print('ready')"
 						],
@@ -2101,186 +2244,29 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/load-iss')]",
-			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"name": "[concat(parameters('workspaceName'), '/DevSparkPool')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"activities": [
-					{
-						"name": "Get data",
-						"type": "Copy",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "JsonSource",
-								"storeSettings": {
-									"type": "HttpReadSettings",
-									"requestMethod": "GET"
-								},
-								"formatSettings": {
-									"type": "JsonReadSettings"
-								}
-							},
-							"sink": {
-								"type": "JsonSink",
-								"storeSettings": {
-									"type": "AzureBlobFSWriteSettings"
-								},
-								"formatSettings": {
-									"type": "JsonWriteSettings"
-								}
-							},
-							"enableStaging": false
-						},
-						"inputs": [
-							{
-								"referenceName": "iss_position",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "iss_position_output",
-								"type": "DatasetReference",
-								"parameters": {
-									"fileName": {
-										"value": "@{utcnow()}",
-										"type": "Expression"
-									}
-								}
-							}
-						]
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 15
 				},
-				"folder": {
-					"name": "serverless"
+				"autoScale": {
+					"enabled": false,
+					"maxNodeCount": 0,
+					"minNodeCount": 0
 				},
+				"nodeCount": 3,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.3",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": true,
 				"annotations": []
 			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/datasets/iss_position')]",
-				"[concat(variables('workspaceId'), '/datasets/iss_position_output')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/HttpServerISS')]",
-			"type": "Microsoft.Synapse/workspaces/linkedServices",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"annotations": [],
-				"type": "HttpServer",
-				"typeProperties": {
-					"url": "[parameters('HttpServerISS_properties_typeProperties_url')]",
-					"enableServerCertificateValidation": true,
-					"authenticationType": "Anonymous"
-				},
-				"connectVia": {
-					"referenceName": "AutoResolveIntegrationRuntime",
-					"type": "IntegrationRuntimeReference"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/iss_position')]",
-			"type": "Microsoft.Synapse/workspaces/datasets",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "HttpServerISS",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "Json",
-				"typeProperties": {
-					"location": {
-						"type": "HttpServerLocation"
-					}
-				},
-				"schema": {}
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/linkedServices/HttpServerISS')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/iss_position_output')]",
-			"type": "Microsoft.Synapse/workspaces/datasets",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
-					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"fileName": {
-						"type": "string"
-					}
-				},
-				"annotations": [],
-				"type": "Json",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"fileName": {
-							"value": "@{dataset().fileName}.json",
-							"type": "Expression"
-						},
-						"folderPath": "raw/serverless",
-						"fileSystem": "iss-position"
-					}
-				},
-				"schema": {}
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/linkedServices/ws-syn-aletu-WorkspaceDefaultStorage')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/Trigger 1')]",
-			"type": "Microsoft.Synapse/workspaces/triggers",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"annotations": [],
-				"runtimeState": "Started",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "load-iss",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
-				"type": "ScheduleTrigger",
-				"typeProperties": {
-					"recurrence": {
-						"frequency": "Minute",
-						"interval": 1,
-						"startTime": "2023-04-27T16:31:00",
-						"endTime": "2023-04-27T18:50:00",
-						"timeZone": "W. Europe Standard Time"
-					}
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/pipelines/load-iss')]"
-			]
+			"dependsOn": [],
+			"location": "westeurope"
 		}
 	]
 }

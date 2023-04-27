@@ -11,14 +11,14 @@
 		"ws-syn-aletu-WorkspaceDefaultSqlServer_connectionString": {
 			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:ws-syn-aletu.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
 		},
+		"HttpServerISS_properties_typeProperties_url": {
+			"value": "http://api.open-notify.org/iss-now.json"
+		},
 		"nyc_tlc_yellow_sasUri": {
 			"value": ""
 		},
 		"ws-syn-aletu-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"value": "https://datalakeytaletu.dfs.core.windows.net"
-		},
-		"HttpServerISS_properties_typeProperties_url": {
-			"value": "http://api.open-notify.org/iss-now.json"
 		}
 	}
 }

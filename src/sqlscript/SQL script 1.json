@@ -1,0 +1,17 @@
+{
+	"name": "SQL script 1",
+	"properties": {
+		"content": {
+			"query": "CREATE EXTERNAL TABLE iss.ext_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'raw/serverless/parquet/**',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n\nSELECT * FROM iss.ext_position;\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LogicalDWH",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

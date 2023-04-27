@@ -1,11 +1,11 @@
 {
-	"name": "query-extTable-iss",
+	"name": "query-cetas-iss",
 	"properties": {
 		"folder": {
 			"name": "iss-position"
 		},
 		"content": {
-			"query": "SELECT * \nFROM iss.ext_position\n\n-- Creare una external table con metodo CETAS non vuol dire che continua a prendere dati (nuovi che entrano) dalla posizione di sorgente e crearne nella posizione di destinazione",
+			"query": "SELECT * \nFROM iss.cetas_position\n\n-- Creare una external table con metodo CETAS non vuol dire che continua a prendere dati (nuovi che entrano) dalla posizione di sorgente e crearne nella posizione di destinazione.\n-- Quindi sto interrogando i dati che ho generato AL MOMENTO della creazione della external table con metodo CETAS",
 			"metadata": {
 				"language": "sql"
 			},

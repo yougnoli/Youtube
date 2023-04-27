@@ -1,0 +1,17 @@
+{
+	"name": "iss_position",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "HttpServerISS",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation"
+			}
+		},
+		"schema": {}
+	}
+}

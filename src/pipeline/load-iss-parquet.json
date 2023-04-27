@@ -1,0 +1,99 @@
+{
+	"name": "load-iss-parquet",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get data",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "HttpReadSettings",
+							"requestMethod": "GET"
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "$['timestamp']"
+								},
+								"sink": {
+									"name": "timestamp",
+									"type": "Int64"
+								}
+							},
+							{
+								"source": {
+									"path": "$['message']"
+								},
+								"sink": {
+									"name": "message",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['iss_position']['latitude']"
+								},
+								"sink": {
+									"name": "latitude",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['iss_position']['longitude']"
+								},
+								"sink": {
+									"name": "longitude",
+									"type": "String"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "iss_position",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "iss_position_ouput",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "serverless"
+		},
+		"annotations": []
+	}
+}

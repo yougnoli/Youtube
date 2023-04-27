@@ -1,0 +1,20 @@
+{
+	"name": "iss_position_ouput",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "raw/serverless/parquet",
+				"fileSystem": "iss-position"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}

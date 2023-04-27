@@ -35,7 +35,7 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('workspaceName'), '/load-iss')]",
+			"name": "[concat(parameters('workspaceName'), '/load-iss-json')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -840,7 +840,7 @@
 					"name": "iss-position"
 				},
 				"content": {
-					"query": "-- This is auto-generated code\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c\n",
+					"query": "-- This is auto-generated code\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c;\n\n-- Ogni lancio della query (1 lancio al minuto) si aggiunge una riga, perche' entra un nuovo json dalla pipeline\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -2278,7 +2278,7 @@
 				"pipelines": [
 					{
 						"pipelineReference": {
-							"referenceName": "load-iss",
+							"referenceName": "load-iss-parquet",
 							"type": "PipelineReference"
 						},
 						"parameters": {}
@@ -2296,7 +2296,189 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('workspaceId'), '/pipelines/load-iss')]"
+				"[concat(variables('workspaceId'), '/pipelines/load-iss-parquet')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/cetas-iss')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"query": "USE LogicalDWH;\nGO\n\nCREATE SCHEMA iss;\n\nCREATE EXTERNAL DATA SOURCE [iss] WITH (LOCATION = 'abfss://iss-position@datalakeytaletu.dfs.core.windows.net/parquet/', CREDENTIAL = [SynapseIdentity]);\nGO\n\nCREATE EXTERNAL TABLE iss.ext_position\n\tWITH (\n\tLOCATION = 'position/',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t) AS\nSELECT\n    b.[timestamp]\n    ,b.[message] \n    ,c.*\nFROM (\n    SELECT \n        jsonContent\n    FROM\n        OPENROWSET(\n            BULK 'https://datalakeytaletu.dfs.core.windows.net/iss-position/raw/serverless/**',\n            FORMAT = 'CSV',\n            FIELDQUOTE = '0x0b',\n            FIELDTERMINATOR ='0x0b',\n            ROWTERMINATOR = '0x0b'\n        )\n        WITH (\n            jsonContent varchar(MAX)\n        ) AS [result]\n    ) AS a\n    CROSS APPLY\n    OPENJSON(a.jsonContent) WITH (\n        [timestamp]     BIGINT\n        ,[message]      VARCHAR(20)\n        ,[iss_position] nvarchar(max) AS JSON\n    ) AS b\n    CROSS APPLY\n    OPENJSON(b.[iss_position]) WITH (\n        latitude    VARCHAR(20)\n        ,longitude  VARCHAR(20)\n    ) AS c;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/query-extTable-iss')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"query": "SELECT * \nFROM iss.ext_position\n\n-- Creare una external table con metodo CETAS non vuol dire che continua a prendere dati (nuovi che entrano) dalla posizione di sorgente e crearne nella posizione di destinazione",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/load-iss-parquet')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "HttpReadSettings",
+									"requestMethod": "GET"
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['timestamp']"
+										},
+										"sink": {
+											"name": "timestamp",
+											"type": "Int64"
+										}
+									},
+									{
+										"source": {
+											"path": "$['message']"
+										},
+										"sink": {
+											"name": "message",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['iss_position']['latitude']"
+										},
+										"sink": {
+											"name": "latitude",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['iss_position']['longitude']"
+										},
+										"sink": {
+											"name": "longitude",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "iss_position",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "iss_position_ouput",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "serverless"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/iss_position')]",
+				"[concat(variables('workspaceId'), '/datasets/iss_position_ouput')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/iss_position_ouput')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "raw/serverless/parquet",
+						"fileSystem": "iss-position"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/ws-syn-aletu-WorkspaceDefaultStorage')]"
 			]
 		}
 	]

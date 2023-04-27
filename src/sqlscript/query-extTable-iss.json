@@ -1,0 +1,20 @@
+{
+	"name": "query-extTable-iss",
+	"properties": {
+		"folder": {
+			"name": "iss-position"
+		},
+		"content": {
+			"query": "SELECT * \nFROM iss.ext_position\n\n-- Creare una external table con metodo CETAS non vuol dire che continua a prendere dati (nuovi che entrano) dalla posizione di sorgente e crearne nella posizione di destinazione",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LogicalDWH",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

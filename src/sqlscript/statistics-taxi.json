@@ -1,0 +1,20 @@
+{
+	"name": "statistics-taxi",
+	"properties": {
+		"folder": {
+			"name": "taxi/serverless/statistics"
+		},
+		"content": {
+			"query": "-- lanciare 3/4 volte\nSELECT\n    DATENAME(MONTH, tpepPickupDateTime) AS monthName\n    ,paymentType\n    ,count(*) as num\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2015/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGROUP BY paymentType, DATENAME(MONTH, tpepPickupDateTime)\nORDER BY num DESC;\n/*\nStatement ID: {3C7C567F-CC02-4970-905B-AD76922A6CC9} | Query hash: 0x2CE30D7899EBE262 | Distributed request ID: {BE79CC69-AFCD-413D-97D3-719DB0A51DB9}. Total size of data scanned is 1134 megabytes, total size of data moved is 1608 megabytes, total size of data written is 0 megabytes.\n(59 records affected)\n\nTotal execution time: 00:07:07.694\n*/\n\nSELECT DISTINCT\n    vendorID\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/delta/puYear=2015/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n/*\nStatement ID: {B465DF17-537E-4A14-82B5-6C9556419B98} | Query hash: 0xFA39E48DDF423402 | Distributed request ID: {2E1D34CE-37CB-4F7A-BFE5-6B6040F3A787}. Total size of data scanned is 47 megabytes, total size of data moved is 1 megabytes, total size of data written is 0 megabytes.\n(2 records affected)\n\nTotal execution time: 00:00:23.359\n*/",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

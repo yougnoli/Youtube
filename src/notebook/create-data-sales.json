@@ -1,0 +1,113 @@
+{
+	"name": "create-data-sales",
+	"properties": {
+		"folder": {
+			"name": "streaming"
+		},
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "DevSparkPool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "9dd3c067-fa93-4200-83c1-0549049cf59e"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/b812f629-6402-4f69-ab6a-880bd6a5c752/resourceGroups/rg-Youtube/providers/Microsoft.Synapse/workspaces/ws-syn-aletu/bigDataPools/DevSparkPool",
+				"name": "DevSparkPool",
+				"type": "Spark",
+				"endpoint": "https://ws-syn-aletu.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/DevSparkPool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"print('ready')"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"import json\r\n",
+					"import random\r\n",
+					"import time\r\n",
+					"\r\n",
+					"while True:\r\n",
+					"    # Generiamo alcuni dati casuali per simulare la vendita di un prodotto online\r\n",
+					"    product = random.choice(['t-shirt', 'jeans', 'scarpe', 'borsa'])\r\n",
+					"    quantity = random.randint(1, 10)\r\n",
+					"    price = round(random.uniform(10.0, 100.0), 2)\r\n",
+					"    customer_id = random.randint(1000, 9999)\r\n",
+					"    order_id = random.randint(10000, 99999)\r\n",
+					"    payment_method = random.choice(['PayPal', 'carta di credito', 'bonifico bancario'])\r\n",
+					"    timestamp = int(time.time())\r\n",
+					"\r\n",
+					"    # Creiamo un dizionario Python con i dati appena generati\r\n",
+					"    data = {\r\n",
+					"        'product': product,\r\n",
+					"        'quantity': quantity,\r\n",
+					"        'price': price,\r\n",
+					"        'customer_id': customer_id,\r\n",
+					"        'order_id': order_id,\r\n",
+					"        'payment_method': payment_method,\r\n",
+					"        'timestamp': timestamp\r\n",
+					"    }\r\n",
+					"\r\n",
+					"    # Convertiamo il dizionario Python in una stringa JSON\r\n",
+					"    json_string = json.dumps(data)\r\n",
+					"\r\n",
+					"    # Stampiamo la stringa JSON su schermo\r\n",
+					"    print(json_string)\r\n",
+					"\r\n",
+					"    # Aspettiamo per qualche secondo prima di iniziare il prossimo ciclo\r\n",
+					"    time.sleep(5)"
+				],
+				"execution_count": null
+			}
+		]
+	}
+}

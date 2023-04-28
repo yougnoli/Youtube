@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "3a48ed53-d31f-4689-9901-673a3332a43d"
+				"spark.autotune.trackingId": "a9e7d6b5-89e8-4e36-a757-0f7e265954d4"
 			}
 		},
 		"metadata": {
@@ -105,17 +105,15 @@
 					"    try:\r\n",
 					"        response = requests.get(url)\r\n",
 					"        data = json.loads(response.content)\r\n",
-					"        print(data)\r\n",
+					"        # print(data)\r\n",
 					"\r\n",
-					"        # Invio dei dati all'Event Hub\r\n",
-					"        # url = \"https://{}.servicebus.windows.net/{}/messages?api-version=2014-01\".format(event_hub_namespace, event_hub_name)\r\n",
-					"        # headers = {\r\n",
-					"        #     \"Content-Type\": \"application/json;charset=UTF-8\",\r\n",
-					"        #     \"Authorization\": \"{}{}\".format(sas_key_name, sas_key)\r\n",
-					"        # }\r\n",
-					"        message = json.dumps(data).encode('utf-8')\r\n",
-					"        # r = requests.post(url, data=message, headers=headers)\r\n",
-					"        # print(r.status_code)\r\n",
+					"        timestamp = data['timestamp']\r\n",
+					"        message = data['message']\r\n",
+					"        latitude = data['iss_position']['latitude']\r\n",
+					"        longitude = data['iss_position']['longitude']\r\n",
+					"\r\n",
+					"        j = json.dumps({'timestamp': timestamp, 'message': message, 'latitude': latitude, 'longitude': longitude}).encode('utf-8')\r\n",
+					"\r\n",
 					"\r\n",
 					"        conn_str='Endpoint=sb://demostreamaletu.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=5TPjI6Oqer8BGbaQCVf/eZ7VX4CB94dbA+AEhHsUmLE=;EntityPath=eventhubdemoaletu'\r\n",
 					"        eventhub_name='eventhubdemoaletu'\r\n",
@@ -126,7 +124,7 @@
 					"        )\r\n",
 					"\r\n",
 					"        with producer:\r\n",
-					"            send_event_data_batch_with_properties(producer,message)\r\n",
+					"            send_event_data_batch_with_properties(producer,j)\r\n",
 					"\r\n",
 					"    except Exception as e:\r\n",
 					"        print(str(e))\r\n",
@@ -134,34 +132,7 @@
 					"    time.sleep(2) # Chiamata alla API ogni 2 secondi\r\n",
 					""
 				],
-				"execution_count": 4
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"conn_str='Endpoint=sb://demostreamaletu.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=5TPjI6Oqer8BGbaQCVf/eZ7VX4CB94dbA+AEhHsUmLE=;EntityPath=eventhubdemoaletu'\r\n",
-					"eventhub_name='eventhubdemoaletu'\r\n",
-					"\r\n",
-					"producer = EventHubProducerClient.from_connection_string(\r\n",
-					"    conn_str=conn_str,\r\n",
-					"    eventhub_name=eventhub_name\r\n",
-					")\r\n",
-					"\r\n",
-					"with producer:\r\n",
-					"    send_event_data_batch_with_properties(producer,json.dumps({'test':'006','result':'riuscito'}))"
-				],
-				"execution_count": 5
+				"execution_count": 21
 			}
 		]
 	}

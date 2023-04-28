@@ -1828,7 +1828,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "73f692cf-0e99-4871-b711-39c46f34e333"
+						"spark.autotune.trackingId": "05c53448-91a7-4f7e-ba0f-0386691f35e9"
 					}
 				},
 				"metadata": {
@@ -1853,13 +1853,15 @@
 						"sparkVersion": "3.3",
 						"nodeCount": 3,
 						"cores": 4,
-						"memory": 28
+						"memory": 28,
+						"automaticScaleJobs": false
 					},
 					"sessionKeepAliveTimeout": 10
 				},
 				"cells": [
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from azure.eventhub import EventHubProducerClient, EventData\r\n",
 							"from azure.eventhub.exceptions import EventHubError\r\n",
@@ -1868,7 +1870,7 @@
 							"import time"
 						],
 						"outputs": [],
-						"execution_count": 1
+						"execution_count": 2
 					},
 					{
 						"cell_type": "code",
@@ -1892,7 +1894,7 @@
 							"    producer.send_batch(event_data_batch)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 3
 					},
 					{
 						"cell_type": "code",
@@ -2867,6 +2869,11 @@
 				"nodeSize": "Small",
 				"nodeSizeFamily": "MemoryOptimized",
 				"sparkVersion": "3.3",
+				"libraryRequirements": {
+					"content": "azure-eventhub",
+					"filename": "requirements.txt",
+					"time": "2023-04-28T19:54:07.2463654Z"
+				},
 				"isComputeIsolationEnabled": false,
 				"sessionLevelPackagesEnabled": true,
 				"annotations": []

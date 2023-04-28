@@ -2859,6 +2859,20 @@
 			},
 			"dependsOn": [],
 			"location": "westeurope"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ws_test')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "PowerBIWorkspace",
+				"typeProperties": {
+					"workspaceID": "e5e1494f-03c2-4cef-a2cf-e73b2e2ff828",
+					"tenantID": "116b1d74-6381-43f7-9900-26a226ae49d0"
+				}
+			},
+			"dependsOn": []
 		}
 	]
 }

@@ -1814,7 +1814,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "a9e7d6b5-89e8-4e36-a757-0f7e265954d4"
+						"spark.autotune.trackingId": "037bab6f-cabc-4b23-9158-1fbd0dbe39e0"
 					}
 				},
 				"metadata": {
@@ -1839,13 +1839,15 @@
 						"sparkVersion": "3.3",
 						"nodeCount": 3,
 						"cores": 4,
-						"memory": 28
+						"memory": 28,
+						"automaticScaleJobs": false
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from azure.eventhub import EventHubProducerClient, EventData\r\n",
 							"from azure.eventhub.exceptions import EventHubError\r\n",

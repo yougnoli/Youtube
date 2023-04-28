@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "73f692cf-0e99-4871-b711-39c46f34e333"
+				"spark.autotune.trackingId": "3a384178-ad4e-4749-88ec-8c6db211e29c"
 			}
 		},
 		"metadata": {
@@ -60,7 +60,7 @@
 					"import requests\r\n",
 					"import time"
 				],
-				"execution_count": 1
+				"execution_count": 2
 			},
 			{
 				"cell_type": "code",
@@ -83,7 +83,7 @@
 					"    event_data_batch.add(event_data)\r\n",
 					"    producer.send_batch(event_data_batch)"
 				],
-				"execution_count": null
+				"execution_count": 3
 			},
 			{
 				"cell_type": "code",

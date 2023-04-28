@@ -1,0 +1,151 @@
+{
+	"name": "streaming-test-connection",
+	"properties": {
+		"folder": {
+			"name": "streaming"
+		},
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "DevSparkPool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "704f4c60-1dc6-4fa5-991d-835991ef74e5"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/b812f629-6402-4f69-ab6a-880bd6a5c752/resourceGroups/rg-Youtube/providers/Microsoft.Synapse/workspaces/ws-syn-aletu/bigDataPools/DevSparkPool",
+				"name": "DevSparkPool",
+				"type": "Spark",
+				"endpoint": "https://ws-syn-aletu.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/DevSparkPool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"print('ready')"
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"!pip install azure-eventhub"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from azure.eventhub import EventHubProducerClient, EventData\r\n",
+					"from azure.eventhub.exceptions import EventHubError\r\n",
+					"import json"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def send_event_data_batch_with_properties(producer, data):\r\n",
+					"    event_data_batch = producer.create_batch()\r\n",
+					"    event_data = EventData(data)\r\n",
+					"    event_data.properties = {'Satellite': 'ISS'}\r\n",
+					"    event_data_batch.add(event_data)\r\n",
+					"    producer.send_batch(event_data_batch)"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"conn_str='Endpoint=sb://demostreamaletu.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=5TPjI6Oqer8BGbaQCVf/eZ7VX4CB94dbA+AEhHsUmLE=;EntityPath=eventhubdemoaletu'\r\n",
+					"eventhub_name='eventhubdemoaletu'\r\n",
+					"\r\n",
+					"producer = EventHubProducerClient.from_connection_string(\r\n",
+					"    conn_str=conn_str,\r\n",
+					"    eventhub_name=eventhub_name\r\n",
+					")\r\n",
+					"\r\n",
+					"with producer:\r\n",
+					"    send_event_data_batch_with_properties(producer,json.dumps({'test':'005','result':'riuscito'}))"
+				],
+				"execution_count": 7
+			}
+		]
+	}
+}

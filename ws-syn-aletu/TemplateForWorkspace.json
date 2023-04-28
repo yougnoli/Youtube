@@ -1236,7 +1236,7 @@
 					"name": "iss-position"
 				},
 				"content": {
-					"query": "-- Query che punta al container dove entrano i dati in streaming\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/streaming/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n\n/*\nCreazione di una external table che punta al container streaming, \ndove stanno entrando i dati grazie allo stream analytics job, \nche tramite l'event hub prende i dati che sto richiamando da uno script Python nello Spark pool\n*/\n\n-- Creazione external data source\nCREATE EXTERNAL DATA SOURCE [live] WITH (LOCATION = 'abfss://streaming@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\n-- Creazione external table\nCREATE EXTERNAL TABLE iss.ext_live_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = '/**',\n\tDATA_SOURCE = [live],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n-- Il lancio della query, mi fa ritrovare i nuovi record live\nSELECT * FROM iss.ext_live_position;\n\nSELECT COUNT(*) FROM iss.ext_live_position;",
+					"query": "-- Query che punta al container dove entrano i dati in streaming\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/streaming/iss/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n\n/*\nCreazione di una external table che punta al container streaming, \ndove stanno entrando i dati grazie allo stream analytics job, \nche tramite l'event hub prende i dati che sto richiamando da uno script Python nello Spark pool\n*/\n\n-- Creazione external data source\nCREATE EXTERNAL DATA SOURCE [live] WITH (LOCATION = 'abfss://streaming@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\n-- Creazione external table\nCREATE EXTERNAL TABLE iss.ext_live_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'iss/**',\n\tDATA_SOURCE = [live],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n-- Il lancio della query, mi fa ritrovare i nuovi record live\nSELECT * FROM iss.ext_live_position;\n\nSELECT COUNT(*) AS num_rows FROM iss.ext_live_position;",
 					"metadata": {
 						"language": "sql"
 					},
@@ -1828,7 +1828,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "e3ec5bd3-42ba-4a9a-89dc-988ae4b468bf"
+						"spark.autotune.trackingId": "73f692cf-0e99-4871-b711-39c46f34e333"
 					}
 				},
 				"metadata": {
@@ -1853,15 +1853,13 @@
 						"sparkVersion": "3.3",
 						"nodeCount": 3,
 						"cores": 4,
-						"memory": 28,
-						"automaticScaleJobs": false
+						"memory": 28
 					},
 					"sessionKeepAliveTimeout": 10
 				},
 				"cells": [
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from azure.eventhub import EventHubProducerClient, EventData\r\n",
 							"from azure.eventhub.exceptions import EventHubError\r\n",
@@ -1870,7 +1868,7 @@
 							"import time"
 						],
 						"outputs": [],
-						"execution_count": 2
+						"execution_count": 1
 					},
 					{
 						"cell_type": "code",

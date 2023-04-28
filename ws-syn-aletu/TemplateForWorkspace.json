@@ -1214,6 +1214,29 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/streaming-iss')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "iss-position"
+				},
+				"content": {
+					"query": "-- Query che punta al container dove entrano i dati in streaming\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/streaming/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n\n/*\nCreazione di una external table che punta al container streaming, \ndove stanno entrando i dati grazie allo stream analytics job, \nche tramite l'event hub prende i dati che sto richiamando da uno script Python nello Spark pool\n*/\n\n-- Creazione external data source\nCREATE EXTERNAL DATA SOURCE [live] WITH (LOCATION = 'abfss://streaming@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\n-- Creazione external table\nCREATE EXTERNAL TABLE iss.ext_live_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = '/**',\n\tDATA_SOURCE = [live],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n-- Il lancio della query, mi fa ritrovare i nuovi record live\nSELECT * FROM iss.ext_live_position;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "LogicalDWH",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/vista-vs-extTable')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -1768,6 +1791,150 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/get-data-iss-position')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "streaming"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "DevSparkPool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "a9e7d6b5-89e8-4e36-a757-0f7e265954d4"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/b812f629-6402-4f69-ab6a-880bd6a5c752/resourceGroups/rg-Youtube/providers/Microsoft.Synapse/workspaces/ws-syn-aletu/bigDataPools/DevSparkPool",
+						"name": "DevSparkPool",
+						"type": "Spark",
+						"endpoint": "https://ws-syn-aletu.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/DevSparkPool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"from azure.eventhub import EventHubProducerClient, EventData\r\n",
+							"from azure.eventhub.exceptions import EventHubError\r\n",
+							"import json\r\n",
+							"import requests\r\n",
+							"import time"
+						],
+						"outputs": [],
+						"execution_count": 1
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"def send_event_data_batch_with_properties(producer, data):\r\n",
+							"    event_data_batch = producer.create_batch()\r\n",
+							"    event_data = EventData(data)\r\n",
+							"    event_data.properties = {'Satellite': 'ISS'}\r\n",
+							"    event_data_batch.add(event_data)\r\n",
+							"    producer.send_batch(event_data_batch)"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"url = \"http://api.open-notify.org/iss-now.json\"\r\n",
+							"\r\n",
+							"while True:\r\n",
+							"    try:\r\n",
+							"        response = requests.get(url)\r\n",
+							"        data = json.loads(response.content)\r\n",
+							"        # print(data)\r\n",
+							"\r\n",
+							"        timestamp = data['timestamp']\r\n",
+							"        message = data['message']\r\n",
+							"        latitude = data['iss_position']['latitude']\r\n",
+							"        longitude = data['iss_position']['longitude']\r\n",
+							"\r\n",
+							"        j = json.dumps({'timestamp': timestamp, 'message': message, 'latitude': latitude, 'longitude': longitude}).encode('utf-8')\r\n",
+							"\r\n",
+							"\r\n",
+							"        conn_str='Endpoint=sb://demostreamaletu.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=5TPjI6Oqer8BGbaQCVf/eZ7VX4CB94dbA+AEhHsUmLE=;EntityPath=eventhubdemoaletu'\r\n",
+							"        eventhub_name='eventhubdemoaletu'\r\n",
+							"\r\n",
+							"        producer = EventHubProducerClient.from_connection_string(\r\n",
+							"            conn_str=conn_str,\r\n",
+							"            eventhub_name=eventhub_name\r\n",
+							"        )\r\n",
+							"\r\n",
+							"        with producer:\r\n",
+							"            send_event_data_batch_with_properties(producer,j)\r\n",
+							"\r\n",
+							"    except Exception as e:\r\n",
+							"        print(str(e))\r\n",
+							"\r\n",
+							"    time.sleep(2) # Chiamata alla API ogni 2 secondi\r\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 21
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/optimize-delta-table')]",
 			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
@@ -1973,6 +2140,164 @@
 						],
 						"outputs": [],
 						"execution_count": 24
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/streaming-test-connection')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "streaming"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "DevSparkPool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "99a8e26f-ff4a-474d-91b2-2ada4639d6c4"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/b812f629-6402-4f69-ab6a-880bd6a5c752/resourceGroups/rg-Youtube/providers/Microsoft.Synapse/workspaces/ws-syn-aletu/bigDataPools/DevSparkPool",
+						"name": "DevSparkPool",
+						"type": "Spark",
+						"endpoint": "https://ws-syn-aletu.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/DevSparkPool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"print('ready')"
+						],
+						"outputs": [],
+						"execution_count": 8
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"!pip install azure-eventhub"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from azure.eventhub import EventHubProducerClient, EventData\r\n",
+							"from azure.eventhub.exceptions import EventHubError\r\n",
+							"import json"
+						],
+						"outputs": [],
+						"execution_count": 5
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"def send_event_data_batch_with_properties(producer, data):\r\n",
+							"    event_data_batch = producer.create_batch()\r\n",
+							"    event_data = EventData(data)\r\n",
+							"    event_data.properties = {'Satellite': 'ISS'}\r\n",
+							"    event_data_batch.add(event_data)\r\n",
+							"    producer.send_batch(event_data_batch)"
+						],
+						"outputs": [],
+						"execution_count": 6
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"conn_str='Endpoint=sb://demostreamaletu.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=5TPjI6Oqer8BGbaQCVf/eZ7VX4CB94dbA+AEhHsUmLE=;EntityPath=eventhubdemoaletu'\r\n",
+							"eventhub_name='eventhubdemoaletu'\r\n",
+							"\r\n",
+							"producer = EventHubProducerClient.from_connection_string(\r\n",
+							"    conn_str=conn_str,\r\n",
+							"    eventhub_name=eventhub_name\r\n",
+							")\r\n",
+							"\r\n",
+							"with producer:\r\n",
+							"    send_event_data_batch_with_properties(producer,json.dumps({'test':'006','result':'riuscito'}))"
+						],
+						"outputs": [],
+						"execution_count": 7
 					}
 				]
 			},

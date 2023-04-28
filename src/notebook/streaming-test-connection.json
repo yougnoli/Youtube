@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "e7599ddd-c564-4032-a0aa-05d462e2fc2a"
+				"spark.autotune.trackingId": "99a8e26f-ff4a-474d-91b2-2ada4639d6c4"
 			}
 		},
 		"metadata": {
@@ -142,7 +142,7 @@
 					")\r\n",
 					"\r\n",
 					"with producer:\r\n",
-					"    send_event_data_batch_with_properties(producer,json.dumps({'test':'005','result':'riuscito'}))"
+					"    send_event_data_batch_with_properties(producer,json.dumps({'test':'006','result':'riuscito'}))"
 				],
 				"execution_count": 7
 			}

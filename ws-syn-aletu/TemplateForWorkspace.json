@@ -3041,6 +3041,29 @@
 				"type": "SqlQuery"
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/partition-filepath')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "taxi/serverless/partition"
+				},
+				"content": {
+					"query": "-- Non sono presenti le cartelle che contengono i file all'interno del dataset \nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2018/puMonth=06/puDay=03/part-00400-8a590b10-ccb7-4254-aefc-4ea34c6bf077.c000.snappy.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n-- Per farle comparire devo aggiungerle con la funzione .filepath()\nSELECT\n    TOP 100 *\n    ,[result].filepath(1) as PuDay\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/yellowtaxi/nyc/parquet/puYear=2018/puMonth=06/puDay=*/**',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nWHERE [result].filepath(1) = '06';\n\n-- Per creare le partizioni vedi il Notebook di creazione nella cartella adls ",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
 		}
 	]
 }

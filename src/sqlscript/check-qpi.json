@@ -1,0 +1,20 @@
+{
+	"name": "check-qpi",
+	"properties": {
+		"folder": {
+			"name": "QPI-QueryPerformanceInsight"
+		},
+		"content": {
+			"query": "/*\nInsieme di raccomandazioni sul database. Vista che investiga tra i metadati (sys,tabkes, sys.columns, ecc.) e se c'è qualcosa di sospetto o di sbagliato.\nMeglio ordinare per score -> più è alto lo score e più è importante la raccomandazione\n*/\n\nSELECT * FROM qpi.recommendations ORDER BY score DESC;\n\n/*\nQuery che stanno eseguendo sul mio Serverless SQL pool in questo momento\n*/\n\nSELECT * FROM qpi.queries;\n\n/*\nQuery che sono state eseguite sul mio Serverless SQL pool.\n*/\n\nSELECT * FROM qpi.query_history;\n\n-- Mi restituisce tutte le query che hanno lo stesso testo:\nSELECT * FROM qpi.query_history WHERE query_text_id = 0x2F0D9F43F94B5778;\n-- Da qui posso vedere le caratteristiche delle query che hanno lo stesso identico testo\n\n-- Se voglio confrontare due query devo prendere il loro request_id:\nSELECT *\nFROM qpi.cmp_queries('{3FE352BC-2606-4F2E-8A10-42812626F622}', '{C2F0D692-E7D3-48DA-A376-7CA6E1C7EF16}');\n\n\n\n\n\n\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "LogicalDWH",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

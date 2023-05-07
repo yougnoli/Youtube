@@ -2,7 +2,7 @@
 	"name": "streaming-iss",
 	"properties": {
 		"folder": {
-			"name": "iss-position"
+			"name": "serverless-sql-pool/iss-position"
 		},
 		"content": {
 			"query": "-- Query che punta al container dove entrano i dati in streaming\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/streaming/iss/**',\n        FORMAT = 'PARQUET'\n    ) AS [result];\n\n\n/*\nCreazione di una external table che punta al container streaming, \ndove stanno entrando i dati grazie allo stream analytics job, \nche tramite l'event hub prende i dati che sto richiamando da uno script Python nello Spark pool\n*/\n\n-- Creazione external data source\nCREATE EXTERNAL DATA SOURCE [live] WITH (LOCATION = 'abfss://streaming@datalakeytaletu.dfs.core.windows.net/', CREDENTIAL = [SynapseIdentity]);\nGO\n\n-- Creazione external table\nCREATE EXTERNAL TABLE iss.ext_live_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'iss/**',\n\tDATA_SOURCE = [live],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n-- Il lancio della query, mi fa ritrovare i nuovi record live\nSELECT * FROM iss.ext_live_position;\n\nSELECT COUNT(*) AS num_rows FROM iss.ext_live_position;",

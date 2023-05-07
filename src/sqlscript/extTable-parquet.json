@@ -2,7 +2,7 @@
 	"name": "extTable-parquet",
 	"properties": {
 		"folder": {
-			"name": "iss-position"
+			"name": "serverless-sql-pool/iss-position"
 		},
 		"content": {
 			"query": "-- Creazione di una external table senza il metodo CETAS\nCREATE EXTERNAL TABLE iss.ext_position (\n\t[timestamp] bigint,\n\t[message] varchar(20),\n\t[latitude] varchar(20),\n\t[longitude] varchar(20)\n\t)\n\tWITH (\n\tLOCATION = 'raw/serverless/parquet/**',\n\tDATA_SOURCE = [iss],\n\tFILE_FORMAT = [parquet]\n\t);\nGO\n\n-- Il lancio della query, mi fa ritrovare i nuovi record (ho specificato solo la sorgente al momento della creazione)\nSELECT * FROM iss.ext_position;\n",

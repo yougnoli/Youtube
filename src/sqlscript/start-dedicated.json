@@ -5,7 +5,7 @@
 			"name": "dedicated-sql-pool"
 		},
 		"content": {
-			"query": "-- https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbWRuUkpEdWdkZDQzRWlSY2RzTk9IS1lRMlBVd3xBQ3Jtc0ttMXVYM1JtQzMtdUJGOWNtRndoOUQ2NTIyYU0zYzBtUU13bVlid3g5MHJ6UEFpbjMzOVRTcDZMZGVNN2dud2ZWNW1iSnM4bzQ2Y2ljdklzckVaUU5ZSWY1Qm5WWEVlNWhScUF6VnVaYjdrenZmak5KZw&q=https%3A%2F%2Flearn.microsoft.com%2Fen-us%2Fazure%2Fsynapse-analytics%2Fsql-data-warehouse%2Fwhat-is-a-data-warehouse-unit-dwu-cdwu&v=rIL_WR3zCyo\n-- https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-distribute\n",
+			"query": "-- https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbWRuUkpEdWdkZDQzRWlSY2RzTk9IS1lRMlBVd3xBQ3Jtc0ttMXVYM1JtQzMtdUJGOWNtRndoOUQ2NTIyYU0zYzBtUU13bVlid3g5MHJ6UEFpbjMzOVRTcDZMZGVNN2dud2ZWNW1iSnM4bzQ2Y2ljdklzckVaUU5ZSWY1Qm5WWEVlNWhScUF6VnVaYjdrenZmak5KZw&q=https%3A%2F%2Flearn.microsoft.com%2Fen-us%2Fazure%2Fsynapse-analytics%2Fsql-data-warehouse%2Fwhat-is-a-data-warehouse-unit-dwu-cdwu&v=rIL_WR3zCyo\n-- https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-distribute",
 			"metadata": {
 				"language": "sql"
 			},

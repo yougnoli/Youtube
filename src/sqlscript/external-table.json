@@ -1,0 +1,20 @@
+{
+	"name": "external-table",
+	"properties": {
+		"folder": {
+			"name": "sanfrancisco/dedicated"
+		},
+		"content": {
+			"query": "-- craere una master key\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'password.1!!';\nGO\n\n-- creare scoped credential (managed identity si puo' usare solo con abfss)\nCREATE DATABASE SCOPED CREDENTIAL SynapseIdentity\nWITH IDENTITY = 'Managed Identity';\nGO\n\n-- creare fonte dato esterna\nCREATE EXTERNAL DATA SOURCE [sanfranciscofireworkers_d] WITH (\n\tLOCATION = N'abfss://sanfranciscofireworkersdata@datalakeytaletu.dfs.core.windows.net/sanfrancisco/', \n\tCREDENTIAL = [SynapseIdentity])\n\n-- creare formato file esterno\nCREATE EXTERNAL FILE FORMAT ParquetFormat WITH (  FORMAT_TYPE = PARQUET );\n\n-- creare external table\nCREATE EXTERNAL TABLE dbo.ext_sanfrancisco_2020 (\n\t[dataType] nvarchar(4000),\n\t[dataSubtype] nvarchar(4000),\n\t[dateTime] datetime2(7),\n\t[category] nvarchar(4000),\n\t[subcategory] nvarchar(4000),\n\t[status] nvarchar(4000),\n\t[address] nvarchar(4000),\n\t[latitude] float,\n\t[longitude] float,\n\t[source] nvarchar(4000),\n\t[extendedProperties] nvarchar(4000)\n\t)\n\tWITH (\n\tLOCATION = 'parquet/year=2020',\n\tDATA_SOURCE = [sanfranciscofireworkers_d],\n\tFILE_FORMAT = [ParquetFormat]\n\t);\nGO\n\n-- interrogazione\nSELECT TOP 100 * FROM dbo.ext_sanfrancisco_2020;\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "devDedicatedSQLpool",
+				"poolName": "devDedicatedSQLpool"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

@@ -1,17 +1,17 @@
 {
-	"name": "start-dedicated",
+	"name": "status-load",
 	"properties": {
 		"folder": {
 			"name": "dedicated-sql-pool"
 		},
 		"content": {
-			"query": "-- https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbWRuUkpEdWdkZDQzRWlSY2RzTk9IS1lRMlBVd3xBQ3Jtc0ttMXVYM1JtQzMtdUJGOWNtRndoOUQ2NTIyYU0zYzBtUU13bVlid3g5MHJ6UEFpbjMzOVRTcDZMZGVNN2dud2ZWNW1iSnM4bzQ2Y2ljdklzckVaUU5ZSWY1Qm5WWEVlNWhScUF6VnVaYjdrenZmak5KZw&q=https%3A%2F%2Flearn.microsoft.com%2Fen-us%2Fazure%2Fsynapse-analytics%2Fsql-data-warehouse%2Fwhat-is-a-data-warehouse-unit-dwu-cdwu&v=rIL_WR3zCyo\n-- https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-distribute",
+			"query": "SELECT  r.[request_id]                           \n,       r.[status]                               \n,       r.resource_class                         \n,       r.command\n,       sum(bytes_processed) AS bytes_processed\n,       sum(rows_processed) AS rows_processed\nFROM    sys.dm_pdw_exec_requests r\n              JOIN sys.dm_pdw_dms_workers w\n                     ON r.[request_id] = w.request_id\nWHERE [label] = 'COPY : Load [dbo].[Date] - Taxi dataset' OR\n    [label] = 'COPY : Load [dbo].[Geography] - Taxi dataset' OR\n    [label] = 'COPY : Load [dbo].[HackneyLicense] - Taxi dataset' OR\n    [label] = 'COPY : Load [dbo].[Medallion] - Taxi dataset' OR\n    [label] = 'COPY : Load [dbo].[Time] - Taxi dataset' OR\n    [label] = 'COPY : Load [dbo].[Weather] - Taxi dataset' OR\n    [label] = 'COPY : Load [dbo].[Trip] - Taxi dataset' \nand session_id <> session_id() and type = 'WRITER'\nGROUP BY r.[request_id]                           \n,       r.[status]                               \n,       r.resource_class                         \n,       r.command;",
 			"metadata": {
 				"language": "sql"
 			},
 			"currentConnection": {
-				"databaseName": "master",
-				"poolName": "Built-in"
+				"databaseName": "devDedicatedSQLpool",
+				"poolName": "devDedicatedSQLpool"
 			},
 			"resultLimit": 5000
 		},

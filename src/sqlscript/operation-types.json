@@ -5,13 +5,13 @@
 			"name": "dedicated-sql-pool"
 		},
 		"content": {
-			"query": "SELECT PassengerCount,\n      SUM(TripDistanceMiles) as SumTripDistance,\n      AVG(TripDistanceMiles) as AvgTripDistance\nFROM  [dbo].[Trip]\nWHERE TripDistanceMiles > 0 AND PassengerCount > 0\nGROUP BY PassengerCount\nOPTION (LABEL = 'RR: SHUFFLE');\n\nSELECT * FROM sys.dm_pdw_exec_requests WHERE [LABEL] = 'RR: SHUFFLE'\nSELECT * FROM sys.dm_pdw_request_steps WHERE [request_id] = 'QID1370'",
+			"query": "SELECT PassengerCount,\n      SUM(TripDistanceMiles) as SumTripDistance,\n      AVG(TripDistanceMiles) as AvgTripDistance\nFROM  [dbo].[Trip]\nWHERE TripDistanceMiles > 0 AND PassengerCount > 0\nGROUP BY PassengerCount\nOPTION (LABEL = 'RR: SHUFFLE');\n\n\nSELECT * FROM sys.dm_pdw_exec_requests WHERE [LABEL] = 'RR: SHUFFLE'\nSELECT * FROM sys.dm_pdw_request_steps WHERE [request_id] = 'QID1527'",
 			"metadata": {
 				"language": "sql"
 			},
 			"currentConnection": {
-				"databaseName": "master",
-				"poolName": "Built-in"
+				"databaseName": "devDedicatedSQLpool",
+				"poolName": "devDedicatedSQLpool"
 			},
 			"resultLimit": 5000
 		},

@@ -5,7 +5,7 @@
 			"name": "dedicated-sql-pool"
 		},
 		"content": {
-			"query": "-- trova lo skew di una tabella\nDBCC PDW_SHOWSPACEUSED('[dbo].[Trip]');\n\n-- mostra le tabelle che hanno uno skewness > 10%\nselect *\nfrom dbo.vTableSizes\nwhere two_part_name in\n    (\n    select two_part_name\n    from dbo.vTableSizes\n    where row_count > 0\n    group by two_part_name\n    having (max(row_count * 1.000) - min(row_count * 1.000))/max(row_count * 1.000) >= .10\n    )\norder by two_part_name, row_count;\n\n-- peso in GB della tabella -> solo la Trip e' distribuita uniformemente, le altre no perche'?\nselect \n    table_name\n    ,sum(reserved_space_GB) as reserved_space_GB\n    ,sum(data_space_GB) as data_space_GB\nfrom dbo.vTableSizes\ngroup by table_name;",
+			"query": "-- trova lo skew di una tabella\nDBCC PDW_SHOWSPACEUSED('[dbo].[Trip]');\n---\nDBCC PDW_SHOWSPACEUSED('[dbo].[HackneyLicense]');\n\n-- mostra le tabelle che hanno uno skewness > 10%\nselect *\nfrom dbo.vTableSizes\nwhere two_part_name in\n    (\n    select two_part_name\n    from dbo.vTableSizes\n    where row_count > 0\n    group by two_part_name\n    having (max(row_count * 1.000) - min(row_count * 1.000))/max(row_count * 1.000) >= .10\n    )\norder by two_part_name, row_count;\n\n-- peso in GB della tabella -> solo la Trip e' distribuita uniformemente, le altre no perche'?\nselect \n    table_name\n    ,sum(reserved_space_GB) as reserved_space_GB\n    ,sum(data_space_GB) as data_space_GB\nfrom dbo.vTableSizes\ngroup by table_name;",
 			"metadata": {
 				"language": "sql"
 			},

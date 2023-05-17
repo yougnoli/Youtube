@@ -2,7 +2,7 @@
 	"name": "create-table-partition",
 	"properties": {
 		"folder": {
-			"name": "sanfrancisco/dedicated"
+			"name": "sanfrancisco/dedicated/partitioning"
 		},
 		"content": {
 			"query": "CREATE TABLE fire.stg_calls_2001_part\n\t(\n\t [dataType] varchar(100),\n\t [dataSubtype] varchar(100),\n\t [dateTime] datetime2(7),\n\t [date] date,\n\t [category] varchar(100),\n\t [subcategory] varchar(100),\n\t [status] varchar(100),\n\t [address] varchar(100),\n\t [latitude] float,\n\t [longitude] float,\n\t [source] varchar(100),\n\t [extendedProperties] varchar(100)\n\t)\nWITH\n\t(\n\tDISTRIBUTION = ROUND_ROBIN,\n\tCLUSTERED COLUMNSTORE INDEX,\n    PARTITION ([date] RANGE RIGHT FOR VALUES\n    ('20010401', '20010801'))\n\t);\nGO\n\nINSERT INTO fire.stg_calls_2001_part\nSELECT [dataType]\n      ,[dataSubtype]\n      ,[dateTime]\n\t  ,CONVERT(DATE, [dateTime]) as [Date]\n      ,[category]\n      ,[subcategory]\n      ,[status]\n      ,[address]\n      ,[latitude]\n      ,[longitude]\n      ,[source]\n      ,[extendedProperties]\nFROM [fire].[stg_calls_2001]\n\nSELECT count(*) FROM fire.stg_calls_2001_part;\nGO",

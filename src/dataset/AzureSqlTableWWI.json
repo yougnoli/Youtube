@@ -5,26 +5,75 @@
 			"referenceName": "AzureSqlDatabase",
 			"type": "LinkedServiceReference"
 		},
-		"parameters": {
-			"schemaName": {
-				"type": "string"
-			},
-			"tableName": {
-				"type": "string"
-			}
-		},
 		"annotations": [],
 		"type": "AzureSqlTable",
-		"schema": [],
-		"typeProperties": {
-			"schema": {
-				"value": "@dataset().schemaName",
-				"type": "Expression"
+		"schema": [
+			{
+				"name": "City Key",
+				"type": "int",
+				"precision": 10
 			},
-			"table": {
-				"value": "@dataset().tableName",
-				"type": "Expression"
+			{
+				"name": "WWI City ID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "City",
+				"type": "nvarchar"
+			},
+			{
+				"name": "State Province",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Country",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Continent",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Sales Territory",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Region",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Subregion",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Location",
+				"type": "geography"
+			},
+			{
+				"name": "Latest Recorded Population",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Valid From",
+				"type": "datetime2",
+				"scale": 7
+			},
+			{
+				"name": "Valid To",
+				"type": "datetime2",
+				"scale": 7
+			},
+			{
+				"name": "Lineage Key",
+				"type": "int",
+				"precision": 10
 			}
+		],
+		"typeProperties": {
+			"schema": "Dimension",
+			"table": "City"
 		}
 	}
 }

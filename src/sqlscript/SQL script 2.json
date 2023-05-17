@@ -1,0 +1,20 @@
+{
+	"name": "SQL script 2",
+	"properties": {
+		"folder": {
+			"name": "wwi/dedicated"
+		},
+		"content": {
+			"query": "SELECT\n    FS.CustomerKey\n    ,MIN(FS.Quantity) as MinQuantity\n    ,MAX(FS.Quantity) as MaxQuantity\n    ,AVG(FS.TaxRate) as AvgTaxRate\n    ,AVG(FS.TaxAmount) as AvgTaxAmount\n    ,AVG(FS.TotalExcludingTax) as AverageSaleWithoutTax\n    ,AVG(FS.TotalIncludingTax) as AverageSaleWithTax\n    ,COUNT(DISTINCT FS.StockItemKey) as DistinctStockItems\n    ,COUNT(DISTINCT DC.Country) as DistinctCountries\nFROM\n    wwi_perf.FactSale_Slow FS\n    join wwi.DimCity DC ON\n        DC.CityKey = FS.CityKey\nGROUP BY\n    FS.CustomerKey",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

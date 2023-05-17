@@ -1,0 +1,20 @@
+{
+	"name": "load-contoso-external-tables",
+	"properties": {
+		"folder": {
+			"name": "dedicated-sql-pool"
+		},
+		"content": {
+			"query": "-- CREATE EXTERNAL DATA SOURCE AzureStorage_west_public\n-- WITH\n-- (  \n--     TYPE = Hadoop\n-- ,   LOCATION = 'wasbs://contosoretaildw-tables@contosoretaildw.blob.core.windows.net/'\n-- );\n\n-- CREATE EXTERNAL FILE FORMAT TextFileFormat\n-- WITH\n-- (   FORMAT_TYPE = DELIMITEDTEXT\n-- ,    FORMAT_OPTIONS    (   FIELD_TERMINATOR = '|'\n--                     ,    STRING_DELIMITER = ''\n--                     ,    DATE_FORMAT         = 'yyyy-MM-dd HH:mm:ss.fff'\n--                     ,    USE_TYPE_DEFAULT = FALSE\n--                     )\n-- );\n\n-- CREATE SCHEMA [asb]\n-- GO\n\n-- --DimProduct\n-- CREATE EXTERNAL TABLE [asb].DimProduct (\n--     [ProductKey] [int] NOT NULL,\n--     [ProductLabel] [nvarchar](255) NULL,\n--     [ProductName] [nvarchar](500) NULL,\n--     [ProductDescription] [nvarchar](400) NULL,\n--     [ProductSubcategoryKey] [int] NULL,\n--     [Manufacturer] [nvarchar](50) NULL,\n--     [BrandName] [nvarchar](50) NULL,\n--     [ClassID] [nvarchar](10) NULL,\n--     [ClassName] [nvarchar](20) NULL,\n--     [StyleID] [nvarchar](10) NULL,\n--     [StyleName] [nvarchar](20) NULL,\n--     [ColorID] [nvarchar](10) NULL,\n--     [ColorName] [nvarchar](20) NOT NULL,\n--     [Size] [nvarchar](50) NULL,\n--     [SizeRange] [nvarchar](50) NULL,\n--     [SizeUnitMeasureID] [nvarchar](20) NULL,\n--     [Weight] [float] NULL,\n--     [WeightUnitMeasureID] [nvarchar](20) NULL,\n--     [UnitOfMeasureID] [nvarchar](10) NULL,\n--     [UnitOfMeasureName] [nvarchar](40) NULL,\n--     [StockTypeID] [nvarchar](10) NULL,\n--     [StockTypeName] [nvarchar](40) NULL,\n--     [UnitCost] [money] NULL,\n--     [UnitPrice] [money] NULL,\n--     [AvailableForSaleDate] [datetime] NULL,\n--     [StopSaleDate] [datetime] NULL,\n--     [Status] [nvarchar](7) NULL,\n--     [ImageURL] [nvarchar](150) NULL,\n--     [ProductURL] [nvarchar](150) NULL,\n--     [ETLLoadID] [int] NULL,\n--     [LoadDate] [datetime] NULL,\n--     [UpdateDate] [datetime] NULL\n-- )\n-- WITH\n-- (\n--     LOCATION='/DimProduct/'\n-- ,   DATA_SOURCE = AzureStorage_west_public\n-- ,   FILE_FORMAT = TextFileFormat\n-- ,   REJECT_TYPE = VALUE\n-- ,   REJECT_VALUE = 0\n-- )\n-- ;\n\n-- --FactOnlineSales\n-- CREATE EXTERNAL TABLE [asb].FactOnlineSales\n-- (\n--     [OnlineSalesKey] [int]  NOT NULL,\n--     [DateKey] [datetime] NOT NULL,\n--     [StoreKey] [int] NOT NULL,\n--     [ProductKey] [int] NOT NULL,\n--     [PromotionKey] [int] NOT NULL,\n--     [CurrencyKey] [int] NOT NULL,\n--     [CustomerKey] [int] NOT NULL,\n--     [SalesOrderNumber] [nvarchar](20) NOT NULL,\n--     [SalesOrderLineNumber] [int] NULL,\n--     [SalesQuantity] [int] NOT NULL,\n--     [SalesAmount] [money] NOT NULL,\n--     [ReturnQuantity] [int] NOT NULL,\n--     [ReturnAmount] [money] NULL,\n--     [DiscountQuantity] [int] NULL,\n--     [DiscountAmount] [money] NULL,\n--     [TotalCost] [money] NOT NULL,\n--     [UnitCost] [money] NULL,\n--     [UnitPrice] [money] NULL,\n--     [ETLLoadID] [int] NULL,\n--     [LoadDate] [datetime] NULL,\n--     [UpdateDate] [datetime] NULL\n-- )\n-- WITH\n-- (\n--     LOCATION='/FactOnlineSales/'\n-- ,   DATA_SOURCE = AzureStorage_west_public\n-- ,   FILE_FORMAT = TextFileFormat\n-- ,   REJECT_TYPE = VALUE\n-- ,   REJECT_VALUE = 0\n-- )\n-- ;",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "devDedicatedSQLpool",
+				"poolName": "devDedicatedSQLpool"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

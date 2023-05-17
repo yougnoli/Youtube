@@ -107,10 +107,6 @@
 										"folderName": {
 											"value": "@split(item().tableName, '.')[0]",
 											"type": "Expression"
-										},
-										"subfolderName": {
-											"value": "@split(item().tableName, '.')[1]",
-											"type": "Expression"
 										}
 									}
 								}

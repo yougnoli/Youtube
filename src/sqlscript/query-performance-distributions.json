@@ -1,17 +1,17 @@
 {
-	"name": "SQL script 2",
+	"name": "query-performance-distributions",
 	"properties": {
 		"folder": {
 			"name": "wwi/dedicated"
 		},
 		"content": {
-			"query": "SELECT\n    FS.CustomerKey\n    ,MIN(FS.Quantity) as MinQuantity\n    ,MAX(FS.Quantity) as MaxQuantity\n    ,AVG(FS.TaxRate) as AvgTaxRate\n    ,AVG(FS.TaxAmount) as AvgTaxAmount\n    ,AVG(FS.TotalExcludingTax) as AverageSaleWithoutTax\n    ,AVG(FS.TotalIncludingTax) as AverageSaleWithTax\n    ,COUNT(DISTINCT FS.StockItemKey) as DistinctStockItems\n    ,COUNT(DISTINCT DC.Country) as DistinctCountries\nFROM\n    wwi_perf.FactSale_Slow FS\n    join wwi.DimCity DC ON\n        DC.CityKey = FS.CityKey\nGROUP BY\n    FS.CustomerKey",
+			"query": "SELECT  count(*) from stg.FactSale_Slow\n\nSELECT  count(*) from stg.FactSale_Fast\n\nSELECT\n    FS.CustomerKey\n    ,MIN(FS.Quantity) as MinQuantity\n    ,MAX(FS.Quantity) as MaxQuantity\n    ,AVG(FS.TaxRate) as AvgTaxRate\n    ,AVG(FS.TaxAmount) as AvgTaxAmount\n    ,AVG(FS.TotalExcludingTax) as AverageSaleWithoutTax\n    ,AVG(FS.TotalIncludingTax) as AverageSaleWithTax\n    ,COUNT(DISTINCT FS.StockItemKey) as DistinctStockItems\n    ,COUNT(DISTINCT DC.Country) as DistinctCountries\nFROM\n    stg.FactSale_Slow FS\n    join stg.DimCity DC ON\n        DC.CityKey = FS.CityKey\nGROUP BY\n    FS.CustomerKey\n\nSELECT\n    FS.CustomerKey\n    ,MIN(FS.Quantity) as MinQuantity\n    ,MAX(FS.Quantity) as MaxQuantity\n    ,AVG(FS.TaxRate) as AvgTaxRate\n    ,AVG(FS.TaxAmount) as AvgTaxAmount\n    ,AVG(FS.TotalExcludingTax) as AverageSaleWithoutTax\n    ,AVG(FS.TotalIncludingTax) as AverageSaleWithTax\n    ,COUNT(DISTINCT FS.StockItemKey) as DistinctStockItems\n    ,COUNT(DISTINCT DC.Country) as DistinctCountries\nFROM\n    stg.FactSale_Fast FS\n    join stg.DimCity DC ON\n        DC.CityKey = FS.CityKey\nGROUP BY\n    FS.CustomerKey",
 			"metadata": {
 				"language": "sql"
 			},
 			"currentConnection": {
-				"databaseName": "master",
-				"poolName": "Built-in"
+				"databaseName": "devDedicatedSQLpool",
+				"poolName": "devDedicatedSQLpool"
 			},
 			"resultLimit": 5000
 		},

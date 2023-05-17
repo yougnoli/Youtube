@@ -1,0 +1,20 @@
+{
+	"name": "ParquetFire",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "sanfrancisco/",
+				"fileSystem": "sanfranciscofireworkersdata"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}

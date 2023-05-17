@@ -1,0 +1,17 @@
+{
+	"name": "create-load-table-timeexecution",
+	"properties": {
+		"content": {
+			"query": "CREATE TABLE fire.stg_calls_2001\n\t(\n\t [dataType] varchar(100),\n\t [dataSubtype] varchar(100),\n\t [dateTime] datetime2(7),\n\t [category] varchar(100),\n\t [subcategory] varchar(100),\n\t [status] varchar(100),\n\t [address] varchar(100),\n\t [latitude] float,\n\t [longitude] float,\n\t [source] varchar(100),\n\t [extendedProperties] varchar(100)\n\t)\nWITH\n\t(\n\tDISTRIBUTION = ROUND_ROBIN,\n\tHEAP\n\t);\nGO\n\nCOPY INTO fire.stg_calls_2001\n(dataType 1, dataSubtype 2, dateTime 3, category 4, subcategory 5, status 6, address 7, latitude 8, longitude 9, source 10, extendedProperties 11)\nFROM 'https://datalakeytaletu.dfs.core.windows.net/sanfranciscofireworkersdata/sanfrancisco/parquet/year=2001'\nWITH\n(\n\tFILE_TYPE = 'PARQUET'\n\t,MAXERRORS = 0\n);\nGO\n\n-- tempo di esecuzione:(220311 records affected) Total execution time: 00:11:18.110 \n\nSELECT TOP 100 * FROM fire.stg_calls_2001;\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "devDedicatedSQLpool",
+				"poolName": "devDedicatedSQLpool"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

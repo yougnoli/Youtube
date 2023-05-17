@@ -1,0 +1,16 @@
+{
+	"name": "DedicatedSqlPoolTable",
+	"properties": {
+		"annotations": [],
+		"type": "SqlPoolTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "fire",
+			"table": "stg_calls_2001_PB"
+		},
+		"sqlPool": {
+			"referenceName": "devDedicatedSQLpool",
+			"type": "SqlPoolReference"
+		}
+	}
+}

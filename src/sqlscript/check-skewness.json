@@ -5,7 +5,7 @@
 			"name": "wwi/dedicated"
 		},
 		"content": {
-			"query": "-- trova lo skew di una tabella\nDBCC PDW_SHOWSPACEUSED('[stg].[FactSale_fast]');\n---\nDBCC PDW_SHOWSPACEUSED('[stg].[FactSale_slow]');\n",
+			"query": "-- trova lo skew di una tabella\nDBCC PDW_SHOWSPACEUSED('[stg].[FactSale_fast]');\n---\nDBCC PDW_SHOWSPACEUSED('[stg].[FactSale_slow]');",
 			"metadata": {
 				"language": "sql"
 			},

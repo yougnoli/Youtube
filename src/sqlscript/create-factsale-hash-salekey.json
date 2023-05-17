@@ -1,5 +1,5 @@
 {
-	"name": "create-factsale-hash",
+	"name": "create-factsale-hash-salekey",
 	"properties": {
 		"folder": {
 			"name": "wwi/dedicated"

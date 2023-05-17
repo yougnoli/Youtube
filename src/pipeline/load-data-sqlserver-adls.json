@@ -1,0 +1,127 @@
+{
+	"name": "load-data-sqlserver-adls",
+	"properties": {
+		"activities": [
+			{
+				"name": "LookupForTables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select \n\tconcat(b.name, '.', a.name) as tableName\nfrom \n\tsys.tables as a\n\tinner join \n\tsys.schemas as b\n\ton a.schema_id = b.schema_id\nwhere b.schema_id in (6, 7)",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlRead",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEachTable",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LookupForTables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LookupForTables').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "CopyRows",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "AzureSqlTableWWI",
+									"type": "DatasetReference",
+									"parameters": {
+										"schemaName": {
+											"value": "@split(item().tableName, '.')[0]",
+											"type": "Expression"
+										},
+										"tableName": {
+											"value": "@split(item().tableName, '.')[1]",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DelimitedTextWWI",
+									"type": "DatasetReference",
+									"parameters": {
+										"folderName": {
+											"value": "@split(item().tableName, '.')[0]",
+											"type": "Expression"
+										},
+										"fileName": {
+											"value": "@{split(item().tableName, '.')[1]}.csv",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"annotations": []
+	}
+}

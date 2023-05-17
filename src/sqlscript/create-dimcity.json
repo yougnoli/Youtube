@@ -1,0 +1,17 @@
+{
+	"name": "create-dimcity",
+	"properties": {
+		"content": {
+			"query": "CREATE TABLE stg.DimCity\n\t(\n\t [CityKey] int,\n\t [WWICityID] int,\n\t [City] nvarchar(4000),\n\t [StateProvince] nvarchar(4000),\n\t [Country] nvarchar(4000),\n\t [Continent] nvarchar(4000),\n\t [SalesTerritory] nvarchar(4000),\n\t [Region] nvarchar(4000),\n\t [Subregion] nvarchar(4000),\n\t [LatestRecordedPopulation] bigint,\n\t [ValidFrom] datetime2(7),\n\t [ValidTo] datetime2(7),\n\t [LineageKey] int\n\t)\nWITH\n\t(\n\tDISTRIBUTION = REPLICATE,\n\tCLUSTERED INDEX([CityKey])\n\t);\nGO\n\nCOPY INTO stg.DimCity\n(CityKey 1, WWICityID 2, City 3, StateProvince 4, Country 5, Continent 6, SalesTerritory 7, Region 8, Subregion 9, LatestRecordedPopulation 10, ValidFrom 11, ValidTo 12, LineageKey 13)\nFROM 'https://datalakeytaletu.dfs.core.windows.net/wwi/Dimension/Dimension.City.parquet'\nWITH\n(\n\tFILE_TYPE = 'PARQUET'\n\t,MAXERRORS = 0\n);\nGO\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "devDedicatedSQLpool",
+				"poolName": "devDedicatedSQLpool"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

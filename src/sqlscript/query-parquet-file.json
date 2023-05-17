@@ -5,7 +5,7 @@
 			"name": "wwi/serverless"
 		},
 		"content": {
-			"query": "-- This is auto-generated code\nSELECT\n    count(distinct salekey)\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/wwi/Fact/Fact.Sale.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\n",
+			"query": "-- This is auto-generated code\nSELECT\n    count(distinct citykey)\nFROM\n    OPENROWSET(\n        BULK 'https://datalakeytaletu.dfs.core.windows.net/wwi/Fact/Fact.Sale.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\n",
 			"metadata": {
 				"language": "sql"
 			},

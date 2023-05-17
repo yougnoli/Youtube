@@ -1,28 +1,23 @@
 {
-	"name": "ParquetWWI",
+	"name": "DelimitedTextWWI",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "ws-syn-aletu-WorkspaceDefaultStorage",
 			"type": "LinkedServiceReference"
 		},
-		"parameters": {
-			"folderName": {
-				"type": "string"
-			}
-		},
 		"annotations": [],
-		"type": "Parquet",
+		"type": "DelimitedText",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"fileName": "Fact.Sale.parquet",
-				"folderPath": {
-					"value": "@{dataset().folderName}",
-					"type": "Expression"
-				},
+				"fileName": "FactSale.csv",
+				"folderPath": "csv",
 				"fileSystem": "wwi"
 			},
-			"compressionCodec": "snappy"
+			"columnDelimiter": "|",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
 		},
 		"schema": []
 	}

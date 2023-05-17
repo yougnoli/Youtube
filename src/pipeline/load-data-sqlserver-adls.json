@@ -3,8 +3,8 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "LookupForTables",
-				"type": "Lookup",
+				"name": "DimensionCity",
+				"type": "Copy",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
@@ -17,109 +17,206 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"sqlReaderQuery": "select \n\tconcat(b.name, '.', a.name) as tableName\nfrom \n\tsys.tables as a\n\tinner join \n\tsys.schemas as b\n\ton a.schema_id = b.schema_id\nwhere b.schema_id in (6, 7)",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
-					"dataset": {
-						"referenceName": "AzureSqlRead",
-						"type": "DatasetReference"
+					"sink": {
+						"type": "SqlPoolSink",
+						"preCopyScript": "truncate table stg.DimensionCity",
+						"writeBehavior": "Insert",
+						"sqlWriterUseTableLock": false
 					},
-					"firstRowOnly": false
-				}
-			},
-			{
-				"name": "ForEachTable",
-				"type": "ForEach",
-				"dependsOn": [
-					{
-						"activity": "LookupForTables",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"userProperties": [],
-				"typeProperties": {
-					"items": {
-						"value": "@activity('LookupForTables').output.value",
-						"type": "Expression"
-					},
-					"activities": [
-						{
-							"name": "CopyRows",
-							"type": "Copy",
-							"dependsOn": [],
-							"policy": {
-								"timeout": "0.12:00:00",
-								"retry": 0,
-								"retryIntervalInSeconds": 30,
-								"secureOutput": false,
-								"secureInput": false
-							},
-							"userProperties": [],
-							"typeProperties": {
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
 								"source": {
-									"type": "AzureSqlSource",
-									"queryTimeout": "02:00:00",
-									"partitionOption": "None"
+									"name": "City Key",
+									"type": "Int32",
+									"physicalType": "int"
 								},
 								"sink": {
-									"type": "DelimitedTextSink",
-									"storeSettings": {
-										"type": "AzureBlobFSWriteSettings"
-									},
-									"formatSettings": {
-										"type": "DelimitedTextWriteSettings",
-										"quoteAllText": true,
-										"fileExtension": ".txt"
-									}
-								},
-								"enableStaging": false,
-								"translator": {
-									"type": "TabularTranslator",
-									"typeConversion": true,
-									"typeConversionSettings": {
-										"allowDataTruncation": true,
-										"treatBooleanAsNumber": false
-									}
+									"name": "City Key",
+									"type": "Int32",
+									"physicalType": "int"
 								}
 							},
-							"inputs": [
-								{
-									"referenceName": "AzureSqlTableWWI",
-									"type": "DatasetReference",
-									"parameters": {
-										"schemaName": {
-											"value": "@split(item().tableName, '.')[0]",
-											"type": "Expression"
-										},
-										"tableName": {
-											"value": "@split(item().tableName, '.')[1]",
-											"type": "Expression"
-										}
-									}
+							{
+								"source": {
+									"name": "WWI City ID",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "WWI City ID",
+									"type": "Int32",
+									"physicalType": "int"
 								}
-							],
-							"outputs": [
-								{
-									"referenceName": "DelimitedTextWWI",
-									"type": "DatasetReference",
-									"parameters": {
-										"folderName": {
-											"value": "@split(item().tableName, '.')[0]",
-											"type": "Expression"
-										},
-										"fileName": {
-											"value": "@{split(item().tableName, '.')[1]}.csv",
-											"type": "Expression"
-										}
-									}
+							},
+							{
+								"source": {
+									"name": "City",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "City",
+									"type": "String",
+									"physicalType": "nvarchar"
 								}
-							]
+							},
+							{
+								"source": {
+									"name": "State Province",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "State Province",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Country",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "Country",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Continent",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "Continent",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Sales Territory",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "Sales Territory",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Region",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "Region",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Subregion",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "Subregion",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Location",
+									"physicalType": "geography"
+								},
+								"sink": {
+									"name": "Location",
+									"type": "Byte[]",
+									"physicalType": "varbinary"
+								}
+							},
+							{
+								"source": {
+									"name": "Latest Recorded Population",
+									"type": "Int64",
+									"physicalType": "bigint"
+								},
+								"sink": {
+									"name": "Latest Recorded Population",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Valid From",
+									"type": "DateTime",
+									"physicalType": "datetime2"
+								},
+								"sink": {
+									"name": "Valid From",
+									"type": "DateTime",
+									"physicalType": "datetime2"
+								}
+							},
+							{
+								"source": {
+									"name": "Valid To",
+									"type": "DateTime",
+									"physicalType": "datetime2"
+								},
+								"sink": {
+									"name": "Valid To",
+									"type": "DateTime",
+									"physicalType": "datetime2"
+								}
+							},
+							{
+								"source": {
+									"name": "Lineage Key",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "Lineage Key",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
 						}
-					]
-				}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "AzureSqlTableWWI",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DedicatedSqlPoolTable",
+						"type": "DatasetReference"
+					}
+				]
 			}
 		],
 		"annotations": []

@@ -2,7 +2,7 @@
 	"name": "operation-types",
 	"properties": {
 		"folder": {
-			"name": "dedicated-sql-pool"
+			"name": "dedicated-sql-pool/load-taxi-data"
 		},
 		"content": {
 			"query": "SELECT PassengerCount,\n      SUM(TripDistanceMiles) as SumTripDistance,\n      AVG(TripDistanceMiles) as AvgTripDistance\nFROM  [dbo].[Trip]\nWHERE TripDistanceMiles > 0 AND PassengerCount > 0\nGROUP BY PassengerCount\nOPTION (LABEL = 'RR: SHUFFLE');\n\n\nSELECT * FROM sys.dm_pdw_exec_requests WHERE [LABEL] = 'RR: SHUFFLE'\nSELECT * FROM sys.dm_pdw_request_steps WHERE [request_id] = 'QID1527'",

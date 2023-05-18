@@ -2,7 +2,7 @@
 	"name": "create-user-load",
 	"properties": {
 		"folder": {
-			"name": "dedicated-sql-pool"
+			"name": "dedicated-sql-pool/load-taxi-data"
 		},
 		"content": {
 			"query": "/*\nL'account amministratore ha lo scopo di eseguire operazioni di gestione e non è adatto per l'esecuzione di query sui dati.\nIl caricamento dei dati è un'operazione che richiede molta memoria. I massimi di memoria sono definiti in base alle unità di data warehouse e alla classe di risorse configurate.\nÈ meglio creare un login e un utente dedicati al caricamento dei dati. \n*/\n\n-- sul master db\nCREATE LOGIN LoaderRC20 WITH PASSWORD = 'a123STRONGpassword!';\nCREATE USER LoaderRC20 FOR LOGIN LoaderRC20;\n\n-- sul db dedicated\nCREATE USER LoaderRC20 FOR LOGIN LoaderRC20;\nGRANT CONTROL ON DATABASE::[devDedicatedSQLpool] to LoaderRC20;\nEXEC sp_addrolemember 'staticrc20', 'LoaderRC20';",

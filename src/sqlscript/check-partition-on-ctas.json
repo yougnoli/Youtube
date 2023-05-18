@@ -1,0 +1,20 @@
+{
+	"name": "check-partition-on-ctas",
+	"properties": {
+		"folder": {
+			"name": "dedicated-sql-pool/load-taxi-data"
+		},
+		"content": {
+			"query": "SELECT  pnp.partition_number, sum(nps.[row_count]) AS Row_Count\nFROM\n   sys.tables t\nINNER JOIN sys.indexes i\n    ON  t.[object_id] = i.[object_id]\n    AND i.[index_id] <= 1 /* HEAP = 0, CLUSTERED or CLUSTERED_COLUMNSTORE =1 */\nINNER JOIN sys.pdw_table_mappings tm\n    ON t.[object_id] = tm.[object_id]\nINNER JOIN sys.pdw_nodes_tables nt\n    ON tm.[physical_name] = nt.[name]\nINNER JOIN sys.pdw_nodes_partitions pnp \n    ON nt.[object_id]=pnp.[object_id] \n    AND nt.[pdw_node_id]=pnp.[pdw_node_id] \n    AND nt.[distribution_id] = pnp.[distribution_id]\nINNER JOIN sys.dm_pdw_nodes_db_partition_stats nps\n    ON nt.[object_id] = nps.[object_id]\n    AND nt.[pdw_node_id] = nps.[pdw_node_id]\n    AND nt.[distribution_id] = nps.[distribution_id]\n    AND pnp.[partition_id]=nps.[partition_id]\nWHERE t.name='Trip_hash_geo'\nGROUP BY pnp.partition_number;\n\n\nselect \n\tcase \n\twhen month(convert(varchar(10), [DateID])) in (1, 2, 3, 4) then '01-trimestre'\n\twhen month(convert(varchar(10), [DateID])) in (5, 6, 7, 8) then '02-trimestre'\n\twhen month(convert(varchar(10), [DateID])) in (9, 10, 11, 12) then '03-trimestre'\n\tend as 'Intervallo'\n\t,count(*) as Num\nfrom dbo.Trip_hash_geo\ngroup by\n\tcase \n\twhen month(convert(varchar(10), [DateID])) in (1, 2, 3, 4) then '01-trimestre'\n\twhen month(convert(varchar(10), [DateID])) in (5, 6, 7, 8) then '02-trimestre'\n\twhen month(convert(varchar(10), [DateID])) in (9, 10, 11, 12) then '03-trimestre'\n\tend\norder by Intervallo;",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "devDedicatedSQLpool",
+				"poolName": "devDedicatedSQLpool"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

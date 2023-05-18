@@ -1,0 +1,20 @@
+{
+	"name": "materialized-view",
+	"properties": {
+		"folder": {
+			"name": "dedicated-sql-pool/load-taxi-data"
+		},
+		"content": {
+			"query": "-- CTAS\nCREATE TABLE [dbo].[Date_rep] WITH (\n\tDISTRIBUTION = REPLICATE\n\t,CLUSTERED COLUMNSTORE INDEX\n)\nAS\nSELECT * FROM [dbo].[Date]\n\n\n\nselect \n\t[DayName]\n\t,avg(convert(float, [TipAmount])) as AvgTip\n\t,avg(convert(float, [TripDistanceMiles])) as AvgDistance\n\t,avg(convert(float, [TripDurationSeconds])) as AvgDuration\n\t,avg(convert(float, [PassengerCount])) as AvgPassengers\nfrom \n\t[dbo].[Trip_hash_geo_date] as a\n\tinner join\n\t[dbo].[Geography] as b\n\ton a.[PickupGeographyID] = b.[GeographyID]\n\tinner join\n\t[dbo].[Date_rep] as c\n\ton a.[DateID] = c.[DateID]\nwhere a.[DateID] < '20130401' and [State] = 'NY'\ngroup by [DayName]\noption (label = 'query test')\n\nSELECT * FROM sys.dm_pdw_exec_requests WHERE [LABEL] = 'query test';\nSELECT * FROM sys.dm_pdw_request_steps WHERE [request_id] = 'QID8781';\n\ncreate view dbo.vw_week_ny\nas\nselect \n\t[DayName]\n\t,avg(convert(float, [TipAmount])) as AvgTip\n\t,avg(convert(float, [TripDistanceMiles])) as AvgDistance\n\t,avg(convert(float, [TripDurationSeconds])) as AvgDuration\n\t,avg(convert(float, [PassengerCount])) as AvgPassengers\nfrom \n\t[dbo].[Trip_hash_geo_date] as a\n\tinner join\n\t[dbo].[Geography] as b\n\ton a.[PickupGeographyID] = b.[GeographyID]\n\tinner join\n\t[dbo].[Date_rep] as c\n\ton a.[DateID] = c.[DateID]\nwhere a.[DateID] < '20130401' and [State] = 'NY'\ngroup by [DayName]\n\nselect * \nfrom dbo.vw_week_ny\noption (label = 'view test2')\n\nSELECT * FROM sys.dm_pdw_exec_requests WHERE [LABEL] = 'view test2';\nSELECT * FROM sys.dm_pdw_request_steps WHERE [request_id] = 'QID8815';\n\n\ncreate materialized view dbo.mvw_week_ny with (distribution = hash ([DayName]))\nas\nselect \n\t[DayName]\n\t,avg(convert(float, [TipAmount])) as AvgTip\n\t,avg(convert(float, [TripDistanceMiles])) as AvgDistance\n\t,avg(convert(float, [TripDurationSeconds])) as AvgDuration\n\t,avg(convert(float, [PassengerCount])) as AvgPassengers\nfrom \n\t[dbo].[Trip_hash_geo_date] as a\n\tinner join\n\t[dbo].[Geography] as b\n\ton a.[PickupGeographyID] = b.[GeographyID]\n\tinner join\n\t[dbo].[Date_rep] as c\n\ton a.[DateID] = c.[DateID]\nwhere a.[DateID] < '20130401' and [State] = 'NY'\ngroup by [DayName]\n\nselect * \nfrom dbo.mvw_week_ny\noption (label = 'mat view test2')\n\nSELECT * FROM sys.dm_pdw_exec_requests WHERE [LABEL] = 'mat view test2';\nSELECT * FROM sys.dm_pdw_request_steps WHERE [request_id] = 'QID8829';",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
